@@ -1,0 +1,1 @@
+/usr/bin/c++  -fPIC   -shared -Wl,-soname,libstlplus.so -o libstlplus.so CMakeFiles/stlplus.dir/filesystemSimplified/portability_fixes.o CMakeFiles/stlplus.dir/filesystemSimplified/wildcard.o CMakeFiles/stlplus.dir/filesystemSimplified/file_system.o 

@@ -1,0 +1,5 @@
+jniproj.lo: jniproj.c /usr/include/stdc-predef.h proj_config.h
+
+/usr/include/stdc-predef.h:
+
+proj_config.h:

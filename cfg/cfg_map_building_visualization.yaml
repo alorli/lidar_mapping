@@ -1,0 +1,75 @@
+%YAML:1.0
+
+# 目录参数配置
+directory:
+  registration_results_filelist_directory: /home/alorli/test_data/huilongguan/optimization/closeloop_optimization_results.txt
+  map_directory: /home/alorli/test_data/huilongguan/map/map_building_visualization/
+
+parameter:
+  min_map_horizontal_radius: 2.0  # 3.0
+  min_keyframe_distance: 0.4      # 0.2
+  num_keyframe_submap: 50        #  50
+  min_intensity: 0
+  max_intensity: 255
+
+map_cloud_publish_frequency: 20
+map_cloud_vector_size: 200
+
+
+# lidar_mapping_node:
+#   is_run_gnss_aidded_optimization: false
+#   is_run_closeloop_optimization: true
+#   is_generate_raw_map: false
+#   is_generate_compensation_map: false
+#   is_generate_gnss_optimization_map: false
+#   is_generate_closeloop_optimization_map: true
+#   is_generate_laserscan_map: true
+
+
+
+# map_builder:
+#   msg_parameter:
+#     pcd_map_voxel_leaf_size: 0.1
+
+
+#   # sick 单线雷达地图生成参数
+#   map_builder_parameter:
+#     lidar_n_scans: 16                 # 雷达线数
+#     vlp_mapping_parameter:
+#       min_map_horizontal_radius: 1.0  # 3.0
+#       min_keyframe_distance: 0.2      # 0.2
+#       num_keyframe_submap: 50         #  50
+#       min_intensity: 0
+#       max_intensity: 255
+#     sick_mapping_parameter:
+#       min_map_horizontal_radius: 1.0  # 3.0
+#       min_keyframe_distance: 0.0      # 0.2
+#       num_keyframe_submap: 500        #  50
+#       min_intensity: 300
+#       max_intensity: 900
+#   save_vlp_raw_pcd: true
+#   save_sick_raw_pcd: true
+#
+#
+#
+# ndt_registration:
+#   filter_parameter:
+#     min_horizontal_radius: 3.0  # 5.0
+#     voxel_leaf_size: 1.0        # 2.0
+#
+#   ndt_parameter:
+#     transformation_epsilon: 0.01
+#     step_size: 0.1
+#     resolution: 1.0
+#     max_iterations: 30          # 30
+#
+#   mapping_parameter:
+#     min_keyframe_distance: 1.0
+#     map_trim_distance: 50.0
+#     map_passthrough:
+#       x_min: -60.0
+#       x_max: 60.0
+#       y_min: -60.0
+#       y_max: 60.0
+#       z_min: -10.0
+#       z_max: 30.0

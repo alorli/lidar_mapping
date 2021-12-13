@@ -1,0 +1,5 @@
+bool is_save_map
+string map_name
+---
+bool is_received
+bool is_map_saved

@@ -1,0 +1,167 @@
+%YAML:1.0
+
+# 目录参数配置
+directory:
+  project_directory: /home/alorli/test_data/test_太阳谷正门_物资门往返/      # 工程文件主目录
+  
+  map:
+    main_directory: map/
+    raw_map: raw_map/
+    compensation_map: compensation_map/
+    gnss_optimization_map: gnss_optimization_map/
+    closeloop_optimization_map: closeloop_optimization_map/
+    laserscan_map_directory: laserscan_map/
+
+  velodyne:
+    main_directory: velodyne/
+    raw_directory: raw/
+    compensation_directory: compensation/
+    pcd_directory: pcd/
+    registration_results_filelist: registration_results_filelist.txt
+    g2o_file: g2o_pose.g2o
+
+  sick:
+    main_directory: sick/
+    raw_directory: raw/
+    compensation_directory: compensation/
+    pcd_directory: pcd/
+    registration_results_filelist: registration_results_filelist.txt
+    interpolation_results_filelist: interpolation_results_filelist.txt
+
+  gnss:
+    main_directory: gnss/
+    gnss_fix_pose_file: gnss_fix_pose.txt
+    gnss_init_pose_file: gnss_init_pose.txt
+    
+  optimization:
+    main_directory: optimization/
+    gnss_before_optimization_file: gnss_before_optimization.g2o
+    gnss_after_optimization_file: gnss_after_optimization.g2o
+    gnss_optimization_results_file: gnss_optimization_results.txt
+    closeloop_before_optimization_file: closeloop_before_optimization.g2o
+    closeloop_after_optimization_file: closeloop_after_optimization.g2o
+    closeloop_optimization_results_file: closeloop_optimization_results.txt
+
+
+lidar_mapping_node: 
+  is_run_gnss_aidded_optimization: true
+  is_run_closeloop_optimization: true
+  is_generate_raw_map: true
+  is_generate_compensation_map: true
+  is_generate_gnss_optimization_map: true
+  is_generate_closeloop_optimization_map: true
+  is_generate_laserscan_map: true
+
+
+
+map_builder:
+  msg_parameter:
+    pcd_map_voxel_leaf_size: 0.1
+
+    
+  # sick 单线雷达地图生成参数
+  map_builder_parameter:
+    lidar_n_scans: 16               # 雷达线数
+    vlp_mapping_parameter:
+      min_map_horizontal_radius: 1.0  # 3.0
+      min_keyframe_distance: 0.2      # 0.2
+      num_keyframe_submap: 50        #  50
+      min_intensity: 0
+      max_intensity: 255
+    sick_mapping_parameter:
+      min_map_horizontal_radius: 1.0  # 3.0
+      min_keyframe_distance: 0.0      # 0.2
+      num_keyframe_submap: 500        #  50
+      min_intensity: 300
+      max_intensity: 900
+  save_vlp_raw_pcd: true
+  save_sick_raw_pcd: true
+
+
+
+ndt_registration:
+  filter_parameter:
+    min_horizontal_radius: 3.0  # 5.0
+    voxel_leaf_size: 1.0        # 2.0
+
+  ndt_parameter:
+    transformation_epsilon: 0.01
+    step_size: 0.1
+    resolution: 1.0
+    max_iterations: 30          # 30
+
+  mapping_parameter:
+    min_keyframe_distance: 1.0             
+    map_trim_distance: 50.0
+    map_passthrough:
+      x_min: -60.0
+      x_max: 60.0
+      y_min: -60.0
+      y_max: 60.0
+      z_min: -10.0
+      z_max: 30.0
+
+
+gnss_constraints_builder:
+  gnss_constraints_builder_parameter:
+    min_delta_gnss_time: 0.03
+
+
+gnss_optimization:
+  gnss_optimization_parameter:
+    lidar_keyframe_distance: 0.0                                # 两个雷达关键帧之间的距离， # 默认:1.0, 设置成 0.0，将使用所有的雷达数据帧进行优化
+    use_distance_lidar_pose_estimate_init_angle: 100.0          # 使用多长的轨迹长度去估计初始姿态误差角
+    distance_interval_add_prior_gnss_pose: 1.0                  # 使用多长的轨迹长度去估计初始姿态误差角    默认：100
+    max_iterations: 100
+
+  lever_arm_parameter:
+    use_lever_arm: false
+    lever_arm_x: 0.05
+    lever_arm_y: 0.0
+    lever_arm_z: 0.0
+
+
+closeloop_constraints_builder:
+  closeloop_constraints_builder_parameter:
+    num_threads: 5
+    min_score: 25                                              # 2.5
+    select_interval: 4                                      # 在gnss优化后的位姿中每个几个位姿搜索闭环约束位姿
+    min_constraints_time: 10.0                                 # 闭环搜索时间限制，时间差小于这个值，不进行闭环约束搜索
+    min_constraints_distance: 0.0                              # 闭环搜索距离限制，距离差小于这个值，不进行闭环约束搜索
+    max_constraints_distance: 10                              # 2.0 闭环搜索距离限制，距离差大于这个值，不进行闭环约束搜索
+    max_constraints_distance_z: 5.0
+
+closeloop_optimization:
+  closeloop_optimization_parameter:
+    num_fixed_vertex: 10
+    max_iterations: 100
+    lidar_odom_translation_weight_xy: 0.3
+    lidar_odom_translation_weight_z: 0.3
+    lidar_odom_rotation_weight: 0.3                               
+
+sick_pose_interpolation:
+  interpolation_parameter:
+    extract_frame_distance: 0.0     #两个用于建图的单线雷达位姿之间的距离
+    min_delta_sick_time: 0.2        #两个sick位姿之间的时间差大于这个时间，将不进行位姿插值，这一帧单线雷达数据将不用于建图
+
+  # sick雷达向后装，会扫到车轮，线缆等干扰，外参数为粗略估算
+  # transform_sick_in_vlp:
+  #   x: 0.1
+  #   y: 0.0
+  #   z: -0.3
+  #   roll: 0.0
+  #   pitch: 90.0 
+  #   yaw: 0.0 
+
+  # sick雷达向前装，不会会扫到车轮，线缆等，外参数为粗略测量
+  transform_sick_in_vlp:
+    x: 0.21
+    y: 0.0
+    z: -0.2
+    roll: 0.0
+    pitch: 90.0 
+    yaw: 0.0 
+
+
+  
+

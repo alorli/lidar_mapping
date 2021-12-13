@@ -1,0 +1,23 @@
+<!--edit by lichunjiing 2020_12_23 -->
+<launch>
+  <param name="/use_sim_time" value="false" />
+  <arg name="rviz" default="false" />
+
+  <!-- <arg name="map_file_path" default="/home/alorli/WORK_SPACE_LCJ/my_work/pcd_tools/build/output/" /> -->
+  <arg name="map_file_path" default="/home/alorli/WORK_SPACE_LCJ/map/map_changsha_18#_08_26_0.3/" />
+  <arg name="use_voxel_filter" default="false" />
+  <arg name="voxel_leaf_size" default="0.07" />
+
+
+
+  <node name="to_grid_map_node"  pkg="lidar_mapping"  type="to_grid_map_node" output="screen">
+    <param name="map_file_path" value="$(arg map_file_path)" />
+    <param name="use_voxel_filter" value="$(arg use_voxel_filter)" />
+    <param name="voxel_leaf_size" value="$(arg voxel_leaf_size)" />
+  </node>
+
+  <group if="$(arg rviz)">
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find lidar_mapping)/rviz/map_visualization.rviz" />
+  </group>
+
+</launch>

@@ -1,0 +1,49 @@
+dnl Process this file with autoconf to produce a configure script.
+
+AC_PREREQ(2.59)
+AC_INIT([PROJ.4 Projections], 4.4.9, [warmerdam@pobox.com], proj)
+AC_LANG(C)
+
+
+AM_INIT_AUTOMAKE
+AM_MAINTAINER_MODE
+AM_CONFIG_HEADER(src/proj_config.h)
+
+dnl Checks for programs.
+AC_PROG_CC
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PROG_MAKE_SET
+AM_PROG_LIBTOOL
+
+dnl Checks for libraries.
+AC_CHECK_LIB(m,exp,,,)
+
+dnl We check for headers
+AC_HEADER_STDC
+
+dnl ---------------------------------------------------------------------------
+dnl Check for JNI support.
+dnl ---------------------------------------------------------------------------
+
+AC_CHECKING(whether to enable Java/JNI support)
+
+AC_ARG_WITH(jni,
+[  --with-jni              Include Java/JNI support],,)
+
+if test "$with_jni" = "yes" ; then
+
+  JNI_ENABLED=1
+
+  AC_DEFINE(JNI_ENABLED,1,[Enabled for Java/JNI Support])
+
+  AC_MSG_RESULT([enabled])
+
+else
+  AC_MSG_RESULT([disabled])
+fi
+
+
+AC_OUTPUT(Makefile src/Makefile man/Makefile man/man1/Makefile \
+	man/man3/Makefile nad/Makefile \
+	jniwrap/Makefile jniwrap/org/Makefile jniwrap/org/proj4/Makefile)
