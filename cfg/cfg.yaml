@@ -160,7 +160,7 @@ ndt_registration:
     max_iterations: 30      
 
   mapping_parameter:
-    min_keyframe_distance: 0.1      #默认：1.0
+    min_keyframe_distance: 1.0      #默认：1.0
     map_trim_distance: 50.0
     map_passthrough:
       x_min: -60.0

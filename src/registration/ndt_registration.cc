@@ -345,7 +345,23 @@ void NdtRegistration::AddKeyframeToMap()
     double shift = sqrt(pow(pose_current.x - pose_last_keyframe_.x, 2.0)
                       + pow(pose_current.y - pose_last_keyframe_.y, 2.0));
 
-    if(shift >= mapping_parameter_.min_keyframe_distance)
+    // added by lichunjing 2021-12-21
+    // 前 20帧数据都加到地图中
+    static int num_start_frames = 0;
+    static bool is_start_frames = true;
+    if(num_start_frames < 200)
+    {
+        num_start_frames++;
+        std::cout << "num_start_frames:" << num_start_frames << std::endl;
+    }
+    else
+    {
+        is_start_frames = false;
+    }
+
+
+    // if(shift >= mapping_parameter_.min_keyframe_distance)
+    if((shift >= mapping_parameter_.min_keyframe_distance)||(is_start_frames))
     {
         pose_last_keyframe_ = pose_current;
         pcl::PointCloud<PointType>::Ptr transformed_pointcloud_ptr(new pcl::PointCloud<PointType>());

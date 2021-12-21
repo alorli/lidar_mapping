@@ -272,14 +272,14 @@ target_link_libraries(map_visualization_node
 
 
 ############################### to_grid_map_node ###############################
-add_executable(to_grid_map_node src/node/to_grid_map_node.cc
-)
+# add_executable(to_grid_map_node src/node/to_grid_map_node.cc
+# )
 
-target_link_libraries(to_grid_map_node
-        ${catkin_LIBRARIES}
-        ${PCL_LIBRARIES}
-        /usr/local/lib/libyaml-cpp.so
-       )
+# target_link_libraries(to_grid_map_node
+#         ${catkin_LIBRARIES}
+#         ${PCL_LIBRARIES}
+#         /usr/local/lib/libyaml-cpp.so
+#        )
 
  ############################### map_building_visualization_node ###############################
  # added by lichunjing 2021-03-27
