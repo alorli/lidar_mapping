@@ -349,7 +349,7 @@ void NdtRegistration::AddKeyframeToMap()
     // 前 20帧数据都加到地图中
     static int num_start_frames = 0;
     static bool is_start_frames = true;
-    if(num_start_frames < 200)
+    if(num_start_frames < 300)
     {
         num_start_frames++;
         std::cout << "num_start_frames:" << num_start_frames << std::endl;

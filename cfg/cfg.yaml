@@ -149,18 +149,18 @@ ndt_registration:
     min_horizontal_radius: 3.0  # 5.0
     min_num_points: 1000        # 1000      参与配准的的最少点的个数, added by lichunjing 2021-04-24
     max_radius: 200.0           # 80.0
-    voxel_leaf_size: 1.0        # 2.0
+    voxel_leaf_size: 0.5        # 默认：1.0
     scale_voxel_leaf_size: 1.1  # 1.1      自适应体素滤波,如果体素滤波尺寸太小,每次将体素滤波尺寸放大 1.1倍 added by lichunjing 2021-04-24
 
 
   ndt_parameter:
     transformation_epsilon: 0.01
     step_size: 0.1                 # 默认：0.1
-    resolution: 1.0
+    resolution: 0.5                # 默认：1.0
     max_iterations: 30      
 
   mapping_parameter:
-    min_keyframe_distance: 1.0      #默认：1.0
+    min_keyframe_distance: 0.5      #默认：1.0
     map_trim_distance: 50.0
     map_passthrough:
       x_min: -60.0
