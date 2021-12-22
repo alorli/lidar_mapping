@@ -35,6 +35,7 @@ NdtRegistration::NdtRegistration(std::string cfg_file_path,
     ndt_parameter_.step_size = cfg_file_["ndt_registration"]["ndt_parameter"]["step_size"].as<double>();
     ndt_parameter_.resolution = cfg_file_["ndt_registration"]["ndt_parameter"]["resolution"].as<double>();
     ndt_parameter_.max_iterations = cfg_file_["ndt_registration"]["ndt_parameter"]["max_iterations"].as<int>();
+    mapping_parameter_.num_start_frames_add_to_map = cfg_file_["ndt_registration"]["mapping_parameter"]["num_start_frames_add_to_map"].as<int>();
     mapping_parameter_.min_keyframe_distance = cfg_file_["ndt_registration"]["mapping_parameter"]["min_keyframe_distance"].as<double>();
     mapping_parameter_.map_trim_distance = cfg_file_["ndt_registration"]["mapping_parameter"]["map_trim_distance"].as<double>();
 
@@ -349,7 +350,7 @@ void NdtRegistration::AddKeyframeToMap()
     // 前 20帧数据都加到地图中
     static int num_start_frames = 0;
     static bool is_start_frames = true;
-    if(num_start_frames < 300)
+    if(num_start_frames < mapping_parameter_.num_start_frames_add_to_map)
     {
         num_start_frames++;
         std::cout << "num_start_frames:" << num_start_frames << std::endl;

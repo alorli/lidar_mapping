@@ -58,6 +58,7 @@ struct AlignmentResult
 
 struct MappingParameter
 {
+    int num_start_frames_add_to_map;
     double min_keyframe_distance;
     double map_trim_distance;
 
