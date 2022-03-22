@@ -50,6 +50,8 @@ MapBuilder::MapBuilder(std::string cfg_file_path,
     sick_mapping_parameter_.num_keyframe_submap = cfg_file_["map_builder"]["map_builder_parameter"]["sick_mapping_parameter"]["num_keyframe_submap"].as<int>();
     sick_mapping_parameter_.min_intensity = cfg_file_["map_builder"]["map_builder_parameter"]["sick_mapping_parameter"]["min_intensity"].as<double>();
     sick_mapping_parameter_.max_intensity = cfg_file_["map_builder"]["map_builder_parameter"]["sick_mapping_parameter"]["max_intensity"].as<double>();
+    sick_mapping_parameter_.z_offset = cfg_file_["map_builder"]["map_builder_parameter"]["sick_mapping_parameter"]["z_offset"].as<double>();
+    
 
     dual_antenna_parameter_.is_use_dual_antenna = cfg_file_["map_builder"]["dual_antenna_parameter"]["is_use_dual_antenna"].as<bool>();
     dual_antenna_parameter_.ranges_main_antenna_to_lidar = cfg_file_["map_builder"]["dual_antenna_parameter"]["ranges_main_antenna_to_lidar"].as<double>();
@@ -60,6 +62,7 @@ MapBuilder::MapBuilder(std::string cfg_file_path,
 
     is_save_vlp_raw_pcd_ = cfg_file_["map_builder"]["save_vlp_raw_pcd"].as<bool>();
     is_save_sick_raw_pcd_ = cfg_file_["map_builder"]["save_sick_raw_pcd"].as<bool>();
+    is_save_compensation_bag_= cfg_file_["map_builder"]["save_compensation_bag"].as<bool>();
 
     std::string project_directory = cfg_file_["directory"]["project_directory"].as<std::string>();
     std::string map_main_directory = cfg_file_["directory"]["map"]["main_directory"].as<std::string>();
@@ -67,6 +70,8 @@ MapBuilder::MapBuilder(std::string cfg_file_path,
     std::string sick_main_directory = cfg_file_["directory"]["sick"]["main_directory"].as<std::string>();
     std::string gnss_main_directory = cfg_file_["directory"]["gnss"]["main_directory"].as<std::string>();
     std::string optimization_main_directory = cfg_file_["directory"]["optimization"]["main_directory"].as<std::string>();
+    std::string compensation_bag_main_directory = cfg_file_["directory"]["compensation_bag"]["main_directory"].as<std::string>();
+    std::string compensation_bag_file = cfg_file_["directory"]["compensation_bag"]["compensation_bag_file"].as<std::string>();
     std::string velodyne_raw_directory = cfg_file_["directory"]["velodyne"]["raw_directory"].as<std::string>();
     std::string velodyne_pcd_directory = cfg_file_["directory"]["velodyne"]["pcd_directory"].as<std::string>();
     std::string velodyne_compensation_directory = cfg_file_["directory"]["velodyne"]["compensation_directory"].as<std::string>();
@@ -95,7 +100,7 @@ MapBuilder::MapBuilder(std::string cfg_file_path,
     save_sick_raw_pointcloud_path_ = project_directory + project_directory_name + sick_main_directory + sick_raw_directory + sick_pcd_directory;
     save_velodyne_compensation_pointcloud_path_ = project_directory + project_directory_name + velodyne_main_directory + velodyne_compensation_directory + velodyne_pcd_directory;
     output_map_full_directory_ = project_directory + project_directory_name + map_main_directory + output_map_directory;
-    
+    save_compensation_bag_path_ = project_directory + project_directory_name + compensation_bag_main_directory;
 
     std::cout << std::endl;
     std::cout << "\033[32m" << "----------MapBuilder parameter:----------" << "\033[0m" << std::endl;
@@ -261,6 +266,13 @@ MapBuilder::MapBuilder(std::string cfg_file_path,
         std::cout << "\033[34m" << "create directory:" << project_directory + map_main_directory + output_map_directory << "\033[0m" << std::endl;
 	}
 
+    // 创建 compensation_bag 目录
+    if(!stlplus::folder_exists(save_compensation_bag_path_))
+	{
+		stlplus::folder_create(save_compensation_bag_path_);
+        std::cout << "\033[34m" << "create directory:" << save_compensation_bag_path_ << "\033[0m" << std::endl;
+	}
+
 
     // added by lichunjing 2021-08-12
     if(utm_localization_ == "beijing")
@@ -335,6 +347,8 @@ MapBuilder::MapBuilder(std::string cfg_file_path,
                                           sick_mapping_parameter_.max_intensity
                                          );
 
+    map_generator_laserscan_.SetZOffset(sick_mapping_parameter_.z_offset);
+
     velodyne_compensation_filelist_.open(save_velodyne_compensation_pointcloud_path_ + "../" + velodyne_registration_results_filelist,
                                          std::ios::app);
 
@@ -353,6 +367,11 @@ MapBuilder::MapBuilder(std::string cfg_file_path,
 
     g2o_file_raw_.open(save_velodyne_raw_pointcloud_path_ + "../" + g2o_pose_file,
                                 std::ios::app);
+
+    if(is_save_compensation_bag_)
+    {
+        compensation_bag_.open(save_compensation_bag_path_ + compensation_bag_file, rosbag::bagmode::Write);
+    }
 }
 
 MapBuilder::~MapBuilder()
@@ -363,6 +382,11 @@ MapBuilder::~MapBuilder()
     gnss_fix_pose_file_.close();
     g2o_file_compensation_.close();
     g2o_file_raw_.close();
+
+    if(is_save_compensation_bag_)
+    {
+        compensation_bag_.close();
+    }
 }
 
 void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& msg)
@@ -377,9 +401,6 @@ void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& 
 
     timed_id_pointcloud.time = common::FromRos(msg->header.stamp);
     timed_id_pointcloud.allframe_id = allframe_id_;
-
-
-
 
     // added by lichunjing 2021-04-14
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -415,10 +436,6 @@ void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& 
     // extrapolator_ptr_->AddPose(timed_id_pointcloud_compensation.time, pose_estimate);
     // // end ----added by lichunjing 2021-04-14
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-    
 
     if(is_save_vlp_raw_pcd_)
     {
@@ -458,6 +475,16 @@ void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& 
         ndt_registration_compensation_.AddSensorData(timed_id_pointcloud_compensation);
 
         SaveVlpCompensationPcd(timed_id_pointcloud_compensation);
+
+        // added by lichunjing 2022-03-22
+        if(is_save_compensation_bag_)
+        {
+            sensor_msgs::PointCloud2 msg_pointcloud_compensation;
+            pcl::toROSMsg(timed_id_pointcloud_compensation.pointcloud, msg_pointcloud_compensation);
+            msg_pointcloud_compensation.header.stamp = common::ToRos(timed_id_pointcloud_compensation.time);
+
+            compensation_bag_.write("/points_raw", msg_pointcloud_compensation.header.stamp, msg_pointcloud_compensation);
+        }
     }
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -469,6 +496,11 @@ void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& 
 
 void MapBuilder::AddGnssFixData(const sensor_msgs::NavSatFix::ConstPtr& msg)
 {
+    if(is_save_compensation_bag_)
+    {   
+        compensation_bag_.write("/gps/fix", msg->header.stamp, *msg);
+    }
+    
     sensor_msgs::NavSatFix gnss_data = *msg;
 
     static long long msg_id = 0;
@@ -483,6 +515,8 @@ void MapBuilder::AddGnssFixData(const sensor_msgs::NavSatFix::ConstPtr& msg)
     pj_transform(pj_latlong_, pj_utm_, 1, 1, &utm_x, &utm_y, NULL);
 
     common::Time time_current = common::FromRos(msg->header.stamp);
+
+    // common::Time time_current = common::FromRosAddOffset(msg->header.stamp, -0.045);
 
     // 配置是否使用双天线建图
     if(dual_antenna_parameter_.is_use_dual_antenna)

@@ -1,11 +1,11 @@
 <!--edit by lichunjiing 2020_12_23 -->
 <launch>
   <param name="/use_sim_time" value="true" />
-  <arg name="rviz" default="true" />
+  <arg name="rviz" default="false" />
 
   <arg name="cfg_file_path" default="/home/alorli/WORK_SPACE_LCJ/catkin_ws/src/lidar_mapping/cfg" />
 
-  <node name="lidar_mapping_node"  pkg="lidar_mapping"  type="lidar_mapping_node" output="screen" respawn="true"> 
+  <node name="lidar_mapping_node"  pkg="lidar_mapping"  type="lidar_mapping_node" output="screen" respawn="false"> 
     <param name="cfg_file_path" value="$(arg cfg_file_path)" />
   </node>
 

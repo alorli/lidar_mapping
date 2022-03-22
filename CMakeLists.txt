@@ -41,6 +41,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   geometry_msgs
   std_msgs
+  rosbag
   # tf2
   tf2_ros
   # tf

@@ -21,6 +21,7 @@
 #include "src/processing/map_partition.h"
 #include "src/processing/pointcloud_map_arealist.h"
 
+#include <rosbag/bag.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/NavSatStatus.h>
 #include "sensor_msgs/LaserScan.h"
@@ -70,6 +71,7 @@ struct MappingParameter
     int num_keyframe_submap;
     double min_intensity;
     double max_intensity;
+    double z_offset;
 };
 
 struct DualAntennaParameter
@@ -149,6 +151,10 @@ private:
 
     bool is_save_vlp_raw_pcd_;
     bool is_save_sick_raw_pcd_;
+    bool is_save_compensation_bag_;
+
+    rosbag::Bag compensation_bag_;
+
 
     long long allframe_id_;
     int pcd_map_previous_size_;
@@ -163,6 +169,7 @@ private:
     std::string save_velodyne_raw_pointcloud_path_;
     std::string save_sick_raw_pointcloud_path_;
     std::string save_gnss_path_;
+    std::string save_compensation_bag_path_;
     std::ofstream velodyne_compensation_filelist_;
     std::ofstream velodyne_raw_filelist_;
     std::ofstream sick_raw_filelist_;
