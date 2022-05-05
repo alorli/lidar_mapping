@@ -261,14 +261,14 @@ target_link_libraries(lidar_mapping_node
                      )
 
 ############################### map_visualization_node ###############################
-add_executable(map_visualization_node src/node/map_visualization_node.cc
-              )
+# add_executable(map_visualization_node src/node/map_visualization_node.cc
+#               )
 
-target_link_libraries(map_visualization_node
-                      ${catkin_LIBRARIES}
-                      ${PCL_LIBRARIES}
-                      /usr/local/lib/libyaml-cpp.so
-                     )
+# target_link_libraries(map_visualization_node
+#                       ${catkin_LIBRARIES}
+#                       ${PCL_LIBRARIES}
+#                       /usr/local/lib/libyaml-cpp.so
+#                      )
 
 
 ############################### to_grid_map_node ###############################
