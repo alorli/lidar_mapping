@@ -4,7 +4,7 @@
 #ifndef MAP_GENERATOR_H_
 #define MAP_GENERATOR_H_
 
-#include "src/registration/ndt_registration.h"
+#include "src/registration/ndt_registration/ndt_registration.h"
 #include "geometry_msgs/TransformStamped.h"
 #include "src/common/common.h"
 #include <vector>
@@ -39,6 +39,11 @@ public:
                       double min_intensity,
                       double max_intensity);
 
+    void SetZOffset(double z_offset)
+    {
+      z_offset_ = z_offset;
+    }
+
     // added by lichunjing 2021-03-27, 建图动态可视化用
     void SetMapVectorSize(int map_cloud_vector_size);
 
@@ -68,6 +73,8 @@ private:
     double min_keyframe_distance_;
     double min_map_horizontal_radius_;
     int num_keyframe_submap_;
+
+    double z_offset_ = 0.0;
 
     double min_intensity_;
     double max_intensity_;

@@ -56,9 +56,7 @@ struct OdomData
 
 class LidarMappingNode 
 {
-
 public:
-
     LidarMappingNode(std::string cfg_file_path,
                      std::string project_directory_name,
                      ros::NodeHandle node_handle);

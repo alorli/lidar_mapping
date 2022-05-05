@@ -3,7 +3,7 @@
   <param name="/use_sim_time" value="false" />
   <arg name="rviz" default="true" />
 
-  <arg name="map_file_path" default="/home/alorli/WORK_SPACE_LCJ/map/map_huilonguan_0.2/" />
+  <arg name="map_file_path" default="/home/alorli/WORK_SPACE_LCJ/catkin_ws/src/FAST_LIO/PCD/" />
   <arg name="use_voxel_filter" default="false" />
   <arg name="voxel_leaf_size" default="0.07" />
 

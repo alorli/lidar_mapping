@@ -10,6 +10,7 @@ namespace common
 
 ros::Time ToRos(common::Time time);
 common::Time FromRos(const ::ros::Time& time);
+common::Time FromRosAddOffset(const ::ros::Time& time, double offset_second);
 
 }  // namespace common
 

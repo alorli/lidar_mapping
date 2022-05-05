@@ -6,10 +6,10 @@ ros_interface:
     is_use_lidar: true
     is_use_gnss: true
     is_use_sick: true
-    is_use_imu: false
+    is_use_imu: true
     is_use_odom: false
     is_use_encoder: false
-    lidar_topic: /points_raw
+    lidar_topic: /velodyne_points    # /points_raw
     lidar_queue_size: 1000000    #10hz 存 27小时数据
     sick_topic: /scan
     sick_queue_size: 1000000    
@@ -53,7 +53,7 @@ ros_interface:
 
 # 目录参数配置
 directory:
-  project_directory: /home/alorli/test_data/test/                # 工程文件主目录
+  project_directory: /home/alorli/test_data/nantingchechang/     # 工程文件主目录
   save_map_full_directory: /home/alorli/WORK_SPACE_LCJ/map/      # 定位地图保存路径
 
   map:
@@ -100,14 +100,19 @@ directory:
   pointcloud_map_arealist:
     arealist_filename: arealist.txt
 
+  compensation_bag:
+    main_directory: compensation_bag/
+    compensation_bag_file: compensation_bag.bag
+
+
 lidar_mapping_node:
   is_run_gnss_aidded_optimization: true
-  is_run_closeloop_optimization: true
-  is_generate_raw_map: true
-  is_generate_compensation_map: true
+  is_run_closeloop_optimization: false
+  is_generate_raw_map: false
+  is_generate_compensation_map: false
   is_generate_gnss_optimization_map: true
-  is_generate_closeloop_optimization_map: true
-  is_generate_laserscan_map: true
+  is_generate_closeloop_optimization_map: false
+  is_generate_laserscan_map: false
   is_run_map_partition: false
   is_generate_arealist_file: false
   is_delete_project_directory_after_save_map: false   # 保存地图以后，是否删除工程目录，以节省空间，部署到车上时，设置成 true，节省空间
@@ -117,9 +122,9 @@ lidar_mapping_node:
 map_builder:
   utm_localization: beijing                      # 选择："beijing" 或者 "changsha" added by lichunjing 2021-08-12
   dual_antenna_parameter:                        # 使用双天线建图时的参数
-    is_use_dual_antenna: false
-    ranges_main_antenna_to_lidar: 0.66           # 单位：米，主天线(定位天线)到雷达之间的距离
-    angle_dual_antenna_to_lidar:  24.6           # 单位:度，双天线基线到主天线到雷达连线之间的角度，逆时针为正，顺时针为负
+    is_use_dual_antenna: true
+    ranges_main_antenna_to_lidar: 0.498650654          # 单位：米，主天线(定位天线)到雷达之间的距离
+    angle_dual_antenna_to_lidar:  -146.2043176           # 单位:度，双天线基线到主天线到雷达连线之间的角度，逆时针为正，顺时针为负
   msg_parameter:
     pcd_map_voxel_leaf_size: 0.1
 
@@ -137,10 +142,14 @@ map_builder:
       min_map_horizontal_radius: 1.0  # 3.0
       min_keyframe_distance: 0.0      # 0.2
       num_keyframe_submap: 500        #  50
-      min_intensity: 400              # 300
-      max_intensity: 800              # 900
+      # min_intensity: 400              # 手推车反射值
+      # max_intensity: 800              # 
+      min_intensity: 100              # 车载反射值配置
+      max_intensity: 900              # 
+      z_offset: 0.7                  # 单线雷达z轴补偿值，生成单线点云地图时，将整个点云数据Z轴补偿这个值
   save_vlp_raw_pcd: true
   save_sick_raw_pcd: true
+  save_compensation_bag: true
 
 
 
@@ -149,19 +158,19 @@ ndt_registration:
     min_horizontal_radius: 3.0  # 5.0
     min_num_points: 1000        # 1000      参与配准的的最少点的个数, added by lichunjing 2021-04-24
     max_radius: 200.0           # 80.0
-    voxel_leaf_size: 0.5        # 默认：1.0
+    voxel_leaf_size: 1.0        # 默认：1.0
     scale_voxel_leaf_size: 1.1  # 1.1      自适应体素滤波,如果体素滤波尺寸太小,每次将体素滤波尺寸放大 1.1倍 added by lichunjing 2021-04-24
 
 
   ndt_parameter:
     transformation_epsilon: 0.01
     step_size: 0.1                 # 默认：0.1
-    resolution: 0.5                # 默认：1.0
+    resolution: 1.0                # 默认：1.0
     max_iterations: 30      
 
   mapping_parameter:
-    num_start_frames_add_to_map: 200
-    min_keyframe_distance: 0.5      #默认：1.0
+    num_start_frames_add_to_map: 1
+    min_keyframe_distance: 1.0      #默认：1.0
     map_trim_distance: 50.0
     map_passthrough:
       x_min: -60.0
@@ -170,6 +179,32 @@ ndt_registration:
       y_max: 60.0
       z_min: -10.0
       z_max: 30.0
+
+# added by lichunjing 2022-04-25
+ekf_registration:
+  lidar_process:
+    lidar_min_range: 4.0
+    ring_filter_interval: 4
+  imu_parameter:
+    gravity_local: 9.81
+    init_count_max: 20
+    covariance_acc: 0.1
+    covariance_gyro: 0.1
+    covariance_bias_acc: 0.0001
+    covariance_bias_gyro: 0.0001
+  extrinsic_lidar_in_imu:
+    translation: [0.0, 0.0, 0.28]
+    rotation: [1.0, 0.0, 0.0, 
+               0.0, 1.0, 0.0, 
+               0.0, 0.0, 1.0]
+  ekf_parameter:
+    max_iteration: 4
+    converge_threshold: 0.001
+    
+
+
+
+
 
 
 gnss_constraints_builder:
@@ -199,10 +234,10 @@ closeloop_constraints_builder:
   closeloop_constraints_builder_parameter:
     num_threads: 6
     min_score: 20                                              # 2.5
-    select_interval: 10                                         # 6 在 gnss优化后的位姿中每个几个位姿搜索闭环约束位姿
+    select_interval: 10                                        # 6 在 gnss优化后的位姿中每个几个位姿搜索闭环约束位姿
     min_constraints_time: 10.0                                 # 10.0 闭环搜索时间限制，时间差小于这个值，不进行闭环约束搜索，这个值根据采集地图时的速度设置，
     min_constraints_distance: 0.0                              # 2.0 闭环搜索距离限制，距离差小于这个值，不进行闭环约束搜索
-    max_constraints_distance: 20.0                             # 10.0 闭环搜索距离限制，距离差大于这个值，不进行闭环约束搜索
+    max_constraints_distance: 5.0                              # 20.0 闭环搜索距离限制，距离差大于这个值，不进行闭环约束搜索
     max_constraints_distance_z: 10.0
 
 closeloop_optimization:
@@ -215,7 +250,7 @@ closeloop_optimization:
 
 
 map_partition:
-  voxel_filter_size: 0.3
+  voxel_filter_size: 0.2     #0.3
   step_range_x: 20.0
   step_range_y: 20.0
 
@@ -236,10 +271,18 @@ sick_pose_interpolation:
   #   yaw: 0.0
 
   # sick雷达向前装，不会会扫到车轮，线缆等，外参数为粗略测量
-  transform_sick_in_vlp:
-    x: 0.21
+  # transform_sick_in_vlp:      #手推车，sick雷达向正下方扫描
+  #   x: 0.21
+  #   y: 0.0
+  #   z: -0.2
+  #   roll: 0.0
+  #   pitch: 90.0
+  #   yaw: 0.0
+
+  transform_sick_in_vlp:   # 车载，sick雷达向前下方扫描
+    x: 0.1
     y: 0.0
-    z: -0.2
+    z: 0.1
     roll: 0.0
-    pitch: 90.0
+    pitch: 15.0
     yaw: 0.0

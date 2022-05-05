@@ -16,8 +16,6 @@ SET(G2O_LIBS g2o_cli g2o_ext_freeglut_minimal g2o_simulator g2o_solver_slam2d_li
              g2o_solver_csparse g2o_solver_structure_only g2o_csparse_extension g2o_opengl_helper g2o_solver_dense
              g2o_stuff g2o_types_sclam2d g2o_parser g2o_solver_pcg g2o_types_data g2o_types_sim3 cxsparse)
 
-
-
 find_package(PCL REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(G2O REQUIRED)
@@ -41,6 +39,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   geometry_msgs
   std_msgs
+  rosbag
   # tf2
   tf2_ros
   # tf
@@ -211,7 +210,10 @@ add_executable(lidar_mapping_node src/node/lidar_mapping_node.cc
                                   src/constraints/gnss_constraints_builder.cc
                                   src/constraints/closeloop_constraints_builder.cc
                                   src/optimization/gnss_optimization.cc
-                                  src/registration/ndt_registration.cc
+                                  src/registration/ndt_registration/ndt_registration.cc
+                                  src/registration/ekf_registration/ekf_registration.cc
+                                  src/registration/ekf_registration/imu_processor.cc
+                                  src/registration/ekf_registration/ekf_processor.cc
                                   src/common/time_conversion.cc
                                   src/common/time.cc
                                   src/common/common.cc

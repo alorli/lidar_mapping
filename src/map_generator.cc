@@ -349,9 +349,9 @@ void MapGenerator::GeneratePointCloudRGBMap()
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_transformed_rgba_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
 
         if(pcl::io::loadPCDFile<registration::PointType>(item_registration_results->pcd_file_path, *cloud_raw_ptr) == -1)
-    		{
-    			PCL_ERROR("Couldn't load pcd file \n");
-    		}
+        {
+            PCL_ERROR("Couldn't load pcd file \n");
+        }
 
 
 
@@ -379,8 +379,8 @@ void MapGenerator::GeneratePointCloudRGBMap()
         }
 
         pcl::transformPointCloud(*cloud_filtered_ptr,
-                								 *cloud_transformed_ptr,
-                								 item_registration_results->alignment_result.final_transform);
+                                 *cloud_transformed_ptr,
+                                 item_registration_results->alignment_result.final_transform);
 
         pcl::PointXYZRGB point_xyz_rgb;
         for(pcl::PointCloud<registration::PointType>::const_iterator item = cloud_transformed_ptr->begin();
@@ -389,7 +389,7 @@ void MapGenerator::GeneratePointCloudRGBMap()
         {
             point_xyz_rgb.x = (double)item->x;
             point_xyz_rgb.y = (double)item->y;
-            point_xyz_rgb.z = (double)item->z;
+            point_xyz_rgb.z = (double)item->z + z_offset_;
             double gray = 0.0;
 
             if(typeid(registration::PointType) == typeid(pcl::PointXYZI))

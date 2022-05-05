@@ -5,7 +5,7 @@
 #define MOTION_COMPENSATION_H_
 
 
-#include "src/registration/ndt_registration.h"
+#include "src/registration/ndt_registration/ndt_registration.h"
 #include "src/processing/pose_extrapolator.h"
 
 namespace processing
