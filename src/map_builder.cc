@@ -20,6 +20,7 @@ MapBuilder::MapBuilder(std::string cfg_file_path,
                        std::string project_directory_name)
     :ndt_registration_(cfg_file_path, 0),
      ndt_registration_compensation_(cfg_file_path, 1),
+     ekf_registration_(cfg_file_path),                       //added by lichunjing 2022-04-24
      motion_compensation_(0),
      laserscan_pose_interpolation_(cfg_file_path, project_directory_name),
      gnss_constraints_builder_(cfg_file_path, project_directory_name),
@@ -389,6 +390,7 @@ MapBuilder::~MapBuilder()
     }
 }
 
+/*
 void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
     registration::TimedIdPointCloud timed_id_pointcloud;
@@ -493,6 +495,24 @@ void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& 
     alignment_result_previous_ = ndt_registration_.GetAlignmentResult();
     timed_id_pointcloud_previous_ = timed_id_pointcloud;
 }
+*/
+
+void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& msg)
+{
+    // registration::TimedIdPointCloud timed_id_pointcloud;
+    // pcl::fromROSMsg(*msg, timed_id_pointcloud.pointcloud);
+// 
+    // std::vector<int> indices;
+    // pcl::removeNaNFromPointCloud(timed_id_pointcloud.pointcloud,
+                                //  timed_id_pointcloud.pointcloud,
+                                //  indices);
+// 
+    // timed_id_pointcloud.time = common::FromRos(msg->header.stamp);
+    // timed_id_pointcloud.allframe_id = allframe_id_;
+// 
+    ekf_registration_.AddSensorData(msg);
+}
+
 
 void MapBuilder::AddGnssFixData(const sensor_msgs::NavSatFix::ConstPtr& msg)
 {
@@ -609,7 +629,7 @@ void MapBuilder::AddSickData(const sensor_msgs::LaserScan::ConstPtr& msg)
 }
 
 
-
+/*
 void MapBuilder::AddSensorData(const sensor::ImuData& imu_data)
 {
     if(extrapolator_ptr_ != nullptr)
@@ -625,6 +645,14 @@ void MapBuilder::AddSensorData(const sensor::ImuData& imu_data)
         9.8,
         imu_data);
 }
+*/
+
+void MapBuilder::AddSensorData(const sensor::ImuData& imu_data)
+{
+    ekf_registration_.AddSensorData(imu_data);
+}
+
+
 
 void MapBuilder::AddSensorData(const sensor::OdometryData& odometry_data)
 {

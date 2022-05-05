@@ -21,6 +21,10 @@ common::Time FromRos(const ::ros::Time& time)
   return common::FromUniversal(
       (time.sec + common::kUtsEpochOffsetFromUnixEpochInSeconds) * 10000000ll 
     + (time.nsec + 50) / 100); 
+    
+  //  return common::FromUniversal(
+    //  (time.sec + common::kUtsEpochOffsetFromUnixEpochInSeconds) * 10000000ll 
+  //  + (time.nsec + 0) / 100.0); 
 }
 
 common::Time FromRosAddOffset(const ::ros::Time& time, double offset_second)

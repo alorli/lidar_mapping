@@ -72,6 +72,9 @@
         "set": "cpp",
         "string": "cpp",
         "string_view": "cpp",
-        "shared_mutex": "cpp"
+        "shared_mutex": "cpp",
+        "core": "cpp",
+        "numericaldiff": "cpp",
+        "*.ipp": "cpp"
     }
 }

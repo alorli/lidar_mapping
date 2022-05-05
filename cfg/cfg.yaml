@@ -6,10 +6,10 @@ ros_interface:
     is_use_lidar: true
     is_use_gnss: true
     is_use_sick: true
-    is_use_imu: false
+    is_use_imu: true
     is_use_odom: false
     is_use_encoder: false
-    lidar_topic: /points_raw
+    lidar_topic: /velodyne_points    # /points_raw
     lidar_queue_size: 1000000    #10hz 存 27小时数据
     sick_topic: /scan
     sick_queue_size: 1000000    
@@ -179,6 +179,32 @@ ndt_registration:
       y_max: 60.0
       z_min: -10.0
       z_max: 30.0
+
+# added by lichunjing 2022-04-25
+ekf_registration:
+  lidar_process:
+    lidar_min_range: 4.0
+    ring_filter_interval: 4
+  imu_parameter:
+    gravity_local: 9.81
+    init_count_max: 20
+    covariance_acc: 0.1
+    covariance_gyro: 0.1
+    covariance_bias_acc: 0.0001
+    covariance_bias_gyro: 0.0001
+  extrinsic_lidar_in_imu:
+    translation: [0.0, 0.0, 0.28]
+    rotation: [1.0, 0.0, 0.0, 
+               0.0, 1.0, 0.0, 
+               0.0, 0.0, 1.0]
+  ekf_parameter:
+    max_iteration: 4
+    converge_threshold: 0.001
+    
+
+
+
+
 
 
 gnss_constraints_builder:

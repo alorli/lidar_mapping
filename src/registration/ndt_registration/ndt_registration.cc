@@ -4,7 +4,7 @@
 
 #include <iostream>
 #include <sstream>
-#include "src/registration/ndt_registration.h"
+#include "src/registration/ndt_registration/ndt_registration.h"
 #include <pcl/filters/passthrough.h>
 
 #include <tf/transform_datatypes.h>

@@ -4,7 +4,8 @@
 #ifndef MAP_BUILDER_H_
 #define MAP_BUILDER_H_
 
-#include "src/registration/ndt_registration.h"
+#include "src/registration/ndt_registration/ndt_registration.h"
+#include "src/registration/ekf_registration/ekf_registration.h"   //added by lichunjing 2022-04-24
 #include "src/processing/motion_compensation.h"
 #include "src/processing/pose_interpolation.h"
 #include "src/map_generator.h"
@@ -130,6 +131,9 @@ private:
     registration::NdtRegistration ndt_registration_compensation_;
     registration::AlignmentResult alignment_result_previous_;
     registration::TimedIdPointCloud timed_id_pointcloud_previous_;
+
+
+    registration::EkfRegistration ekf_registration_;   //added by lichunjing 2022-04-24
 
     processing::MotionCompensation motion_compensation_;
     processing::PoseInterpolation laserscan_pose_interpolation_;

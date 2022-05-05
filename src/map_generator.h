@@ -4,7 +4,7 @@
 #ifndef MAP_GENERATOR_H_
 #define MAP_GENERATOR_H_
 
-#include "src/registration/ndt_registration.h"
+#include "src/registration/ndt_registration/ndt_registration.h"
 #include "geometry_msgs/TransformStamped.h"
 #include "src/common/common.h"
 #include <vector>
