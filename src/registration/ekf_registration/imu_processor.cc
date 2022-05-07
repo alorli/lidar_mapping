@@ -220,7 +220,8 @@ void ImuProcessor::LidarMotionCompensation(EkfProcessor& ekf_processor,
         auto &imu_data_current = *(imu_data);
         auto &imu_data_next = *(imu_data + 1);
 
-        std::cout << std::setprecision(20) << "**imu_data_current.time:" << common::ToUniversalSeconds(imu_data_current.time) << std::endl;
+        // std::cout << std::setprecision(20) << "**imu_data_current.time:" << common::ToUniversalSeconds(imu_data_current.time) << std::endl;
+
         // std::cout << "**last_imu_data_:" << last_imu_data_.angular_velocity[0] << "  " << last_imu_data_.angular_velocity[1] << "  " << last_imu_data_.angular_velocity[2] << std::endl;
         // std::cout << "**angular_velocity:" << imu_data_current.angular_velocity[0] << "  " << imu_data_current.angular_velocity[1] << "  " << imu_data_current.angular_velocity[2] << std::endl;
         // std::cout << "**linear_acceleration:" << imu_data_current.linear_acceleration[0] << "  " << imu_data_current.linear_acceleration[1] << "  " << imu_data_current.linear_acceleration[2] << std::endl;
@@ -270,6 +271,10 @@ void ImuProcessor::LidarMotionCompensation(EkfProcessor& ekf_processor,
 
     last_imu_data_ = imu_buffer.back();
     last_lidar_end_time_ = pointcloud_end_time;
+
+    std::cout << "------vel:" << ekf_processor.GetEkfState().velocity << std::endl;
+
+
 
 }
 

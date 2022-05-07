@@ -74,15 +74,28 @@ void EkfRegistration::AddSensorData(const sensor_msgs::PointCloud2::ConstPtr& ms
 
     pcl::PointCloud<velodyne::Point> velodyne_pointcloud;
     pcl::fromROSMsg(*msg, velodyne_pointcloud);
+
     ProcessPointCloud(velodyne_pointcloud, timed_id_lidar_pointcloud);
 
     timed_id_lidar_pointcloud_buffer_.push_back(timed_id_lidar_pointcloud);
 
     if(PrepareMeasurements())
     {
+        // if(!is_start_)
+        // {
+        //     if(measurements_.imu_data_buffer.size() >= 40)
+        //     {
+        //         is_start_ = true;
+        //     }
+        //     else
+        //     {
+        //         return;
+        //     }
+        // }
+
         if(!is_start_)
         {
-            if(measurements_.imu_data_buffer.size() >= 40)
+            if(measurements_.timed_id_lidar_pointcloud.pointcloud.points.size() == 4984)
             {
                 is_start_ = true;
             }
@@ -92,8 +105,11 @@ void EkfRegistration::AddSensorData(const sensor_msgs::PointCloud2::ConstPtr& ms
             }
         }
 
+
         std::cout << "------------------------------------------------------------------------------------------------------------------" << std::endl;
         std::cout << "lidar_points:" << measurements_.timed_id_lidar_pointcloud.pointcloud.points.size() << std::endl;
+
+
         for(int i=0; i<measurements_.imu_data_buffer.size(); i++)
         {
             std::cout << " " << measurements_.imu_data_buffer.at(i).angular_velocity[0];

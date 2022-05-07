@@ -252,8 +252,8 @@ void EkfProcessor::PredictState(double& delta_time,
     // 计算 df_dx
     Eigen::Matrix<double, 24, 23> df_dx = Eigen::Matrix<double, 24, 23>::Zero();
     df_dx.block<3,3>(0,12) = -Eigen::Matrix3d::Identity();
-    df_dx.block<3,3>(3,3) = Eigen::Matrix3d::Identity();
-    df_dx.block<3,3>(6,6) = -1*state_.rotation.toRotationMatrix()*hat(input_state.acc - state_.bias_acc);
+    df_dx.block<3,3>(3,6) = Eigen::Matrix3d::Identity();
+    df_dx.block<3,3>(6,0) = -1*state_.rotation.toRotationMatrix()*hat(input_state.acc - state_.bias_acc);
     df_dx.block<3,3>(6,9) = -1*state_.rotation.toRotationMatrix();
 
     GravityManifold gravity_manifold_old(state_.gravity);
@@ -262,7 +262,7 @@ void EkfProcessor::PredictState(double& delta_time,
 
     // if(print_1st)
     // {
-        // std::cout << "----df_dx:" << std::endl << df_dx << std::endl;
+    //     std::cout << "----df_dx:" << std::endl << df_dx << std::endl;
     // }
 
     // 计算 df_dw
@@ -274,7 +274,7 @@ void EkfProcessor::PredictState(double& delta_time,
 
     // if(print_1st)
     // {
-        // std::cout << "----df_dw:" << std::endl << df_dw << std::endl;
+    //     std::cout << "----df_dw:" << std::endl << df_dw << std::endl;
     // }
 
 
@@ -296,6 +296,12 @@ void EkfProcessor::PredictState(double& delta_time,
 
     // 计算 F_x 和 F_w  ----- state: rotation
     Eigen::Vector3d rotation_vector = -1.0*f.block<3,1>(0,0)*delta_time;
+
+    if(print_1st)
+    {
+        std::cout << "####################:" << std::endl;
+    }
+
     Eigen::Quaterniond rotation = exp(rotation_vector, 0.5);
     F_x.block<3,3>(0,0) = rotation.toRotationMatrix();
 
@@ -307,7 +313,8 @@ void EkfProcessor::PredictState(double& delta_time,
     {
         std::cout << "----delta_time:" << std::endl << delta_time << std::endl;
         std::cout << "----rotation_vector:" << std::endl << rotation_vector << std::endl;
-        std::cout << "----amatrix_rotation:" << std::endl << amatrix_rotation << std::endl;
+        std::cout << "----rotation:x" << rotation.x() << " y:" << rotation.y()<< " z:" << rotation.z()<< " w:" << rotation.w() << std::endl;
+        // std::cout << "----amatrix_rotation:" << std::endl << amatrix_rotation << std::endl;
     }
 
     // 计算 F_x 和 F_w  ----- state: position
@@ -342,33 +349,35 @@ void EkfProcessor::PredictState(double& delta_time,
     // 计算 F_x 和 F_w  ----- state: extrinsic_rotation
     Eigen::Vector3d extrinsic_rotation_vector = -1.0*f.block<3,1>(18,0)*delta_time;
     Eigen::Quaterniond extrinsic_rotation = exp(extrinsic_rotation_vector, 0.5);
-    F_x.block<3,3>(18,18) = extrinsic_rotation.toRotationMatrix();
+    F_x.block<3,3>(17,17) = extrinsic_rotation.toRotationMatrix();
 
     Eigen::Matrix<double, 3, 3> amatrix_extrinsic_rotation = AMatrix(extrinsic_rotation_vector);
-    f_x.block<3,23>(18,0) = amatrix_extrinsic_rotation * df_dx.block<3,23>(18,0);
-    f_w.block<3,12>(18,0) = amatrix_extrinsic_rotation * df_dw.block<3,12>(18,0);
+    f_x.block<3,23>(17,0) = amatrix_extrinsic_rotation * df_dx.block<3,23>(17,0);
+    f_w.block<3,12>(17,0) = amatrix_extrinsic_rotation * df_dw.block<3,12>(17,0);
 
     // 计算 F_x 和 F_w  ----- state: extrinsic_translation
-    f_x.block<3,23>(21,0) = df_dx.block<3,23>(23,0);
-    f_w.block<3,12>(21,0) = df_dw.block<3,12>(21,0);  
-
+    f_x.block<3,23>(20,0) = df_dx.block<3,23>(20,0);
+    f_w.block<3,12>(20,0) = df_dw.block<3,12>(20,0);  
 
     // if(print_1st)
     // {
-        // std::cout << "----f_x:" << std::endl << f_x << std::endl;
-        // std::cout << "----f_w:" << std::endl << f_w << std::endl;
+    //     std::cout << "****f_x:" << std::endl << f_x << std::endl;
+    //     std::cout << "****f_w:" << std::endl << f_w << std::endl;
+    //     std::cout << "****F_x:" << std::endl << F_x << std::endl;
+    //     std::cout << "****Q:" << std::endl << Q << std::endl;
+    //     std::cout << "****process_covariance_:" << std::endl << process_covariance_ << std::endl;
     // }
-
-
-
 
     // 更新一步预测误差方差阵
     F_x += f_x * delta_time;
     process_covariance_ = F_x*process_covariance_*F_x.transpose() + (f_w*delta_time) * Q * (f_w*delta_time).transpose();
 
 
-
-
+    if(print_1st)
+    {
+        std::cout << "----F_x:" << std::endl << F_x << std::endl;
+        std::cout << "----process_covariance_:" << std::endl << process_covariance_ << std::endl;
+    }
 
     print_1st = false;
 }
