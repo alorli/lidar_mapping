@@ -184,6 +184,23 @@ struct ProcessNoiseState
 };
 
 
+// 常用内部函数声明
+namespace math
+{
+
+Eigen::Matrix3d hat(const Eigen::Vector3d& vector3d);
+Eigen::Quaterniond exp(Eigen::Vector3d vec, 
+		               const double& scale);
+Eigen::Matrix3d Exp(const Eigen::Vector3d &angle_velocity, 
+                    const double &delta_time);
+Eigen::Matrix<double, 3, 3> AMatrix(Eigen::Vector3d& v);
+struct GravityManifold;
+
+}
+
+
 } // namespace registration
+
+
 
 #endif

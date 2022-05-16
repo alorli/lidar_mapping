@@ -23,7 +23,7 @@ common::Time FromRos(const ::ros::Time& time)
     + (time.nsec + 50) / 100); 
     
   //  return common::FromUniversal(
-    //  (time.sec + common::kUtsEpochOffsetFromUnixEpochInSeconds) * 10000000ll 
+  //    (time.sec + common::kUtsEpochOffsetFromUnixEpochInSeconds) * 10000000ll 
   //  + (time.nsec + 0) / 100.0); 
 }
 

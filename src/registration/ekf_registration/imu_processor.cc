@@ -198,25 +198,27 @@ void ImuProcessor::LidarMotionCompensation(EkfProcessor& ekf_processor,
          compensationed_pointcloud.pointcloud.points.end(), 
          TimeSort);
 
-    double delta_time = 0.0;
+    
     Eigen::Vector3d angle_velocity_average, acc_average;
 
     std::vector<TimedImuPose> timed_imu_poses;
     InputState input_state;
-    EkfState ekf_state = ekf_processor.GetEkfState();
+    EkfState ekf_state_init = ekf_processor.GetEkfState();
 
     timed_imu_poses.push_back(TimedImuPose{
                                             0.0, 
                                             acc_last_, 
                                             angle_velocity_last_, 
-                                            ekf_state.velocity, 
-                                            ekf_state.position, 
-                                            ekf_state.rotation
+                                            ekf_state_init.velocity, 
+                                            ekf_state_init.position, 
+                                            ekf_state_init.rotation
                                            }
                              );
 
     for(auto imu_data = imu_buffer.begin(); imu_data < (imu_buffer.end() - 1); imu_data++)
     {
+        double delta_time = 0.0;
+
         auto &imu_data_current = *(imu_data);
         auto &imu_data_next = *(imu_data + 1);
 
@@ -267,15 +269,121 @@ void ImuProcessor::LidarMotionCompensation(EkfProcessor& ekf_processor,
         Q_.block<3, 3>(9, 9).diagonal() = covariance_bias_acc_;       // noise_bias_acc
 
         ekf_processor.PredictState(delta_time, Q_, input_state);
+
+        EkfState ekf_state = ekf_processor.GetEkfState();
+        acc_last_ = ekf_state.rotation * (acc_average - ekf_state.bias_acc) + ekf_state.gravity;
+        angle_velocity_last_ = angle_velocity_average - ekf_state.bias_gyro;
+
+        // double offset_time = common::ToUniversalSeconds(imu_data_next.time) - common::ToUniversalSeconds(pointcloud_begin_time);
+        double offset_time = common::ToUniversalSeconds(imu_data_next.time) - common::ToUniversalSeconds(imu_begin_time);  //测试用
+
+        timed_imu_poses.push_back(TimedImuPose{
+                                                offset_time, 
+                                                acc_last_, 
+                                                angle_velocity_last_, 
+                                                ekf_state.velocity, 
+                                                ekf_state.position, 
+                                                ekf_state.rotation
+                                              }
+                                 );
+
+        // std::cout << std::setprecision(20)
+        //           << "&&&&&&&&&&&&&&--offs_t:" << offset_time
+        //           << " pcl_beg_time:" << common::ToUniversalSeconds(pointcloud_begin_time) << std::endl;
+
+
+        // std::cout << "&&&&&&&&&&&&&&--offset_time:" << offset_time
+        //           << " acc_last_:" << acc_last_ << std::endl
+        //           << " angle_velocity_last_:" << angle_velocity_last_ << std::endl
+        //           << " velocity:" << ekf_state.velocity << std::endl
+        //           << " position:" << ekf_state.position << std::endl
+        //           << " rotation:" << ekf_state.rotation.toRotationMatrix() << std::endl;
     }
 
     last_imu_data_ = imu_buffer.back();
     last_lidar_end_time_ = pointcloud_end_time;
 
-    std::cout << "------vel:" << ekf_processor.GetEkfState().velocity << std::endl;
+    // std::cout << "------pos:" << ekf_processor.GetEkfState().position
+    //         << std::endl
+    //         << "  vel:" << ekf_processor.GetEkfState().velocity
+    //         << std::endl
+    //         << "  rot:" << ekf_processor.GetEkfState().rotation.toRotationMatrix() 
+    //         << std::endl;
 
+    double delta_time = common::ToUniversalSeconds(pointcloud_end_time) - common::ToUniversalSeconds(imu_end_time);
+    if(delta_time < 0.0)
+    {
+      delta_time *= -1.0;
+    }
+    std::cout << "****************delta_time:" << delta_time << std::endl;
+    ekf_processor.PredictState(delta_time, Q_, input_state);
+    EkfState ekf_state = ekf_processor.GetEkfState();
 
+    // std::cout << "------pos:" << ekf_state.position
+    //         << std::endl
+    //         << "  vel:" << ekf_state.velocity
+    //         << std::endl
+    //         << "  rot:" << ekf_state.rotation.toRotationMatrix() 
+    //         << std::endl;
 
+    // 点云去畸变
+    Eigen::Vector3d acc_imu, angle_velocity_imu, velocity_imu, position_imu;
+    Eigen::Matrix3d rotation_imu;
+
+    auto iterator_point = compensationed_pointcloud.pointcloud.points.end() - 1;
+    for(auto iterator_imu_pose = timed_imu_poses.end() - 1; iterator_imu_pose != timed_imu_poses.begin(); iterator_imu_pose--)
+    {
+      auto imu_pose_current = iterator_imu_pose - 1;
+      auto imu_pose_next = iterator_imu_pose;
+
+      rotation_imu = imu_pose_current->rotation.toRotationMatrix();
+      velocity_imu = imu_pose_current->velocity;
+      position_imu = imu_pose_current->position;
+      acc_imu = imu_pose_next->acc;
+      angle_velocity_imu =  imu_pose_next->gyro;
+
+      bool is_1st = true;
+      for(; iterator_point->curvature > imu_pose_current->offset_time; iterator_point--)
+      {
+        double delta_time = iterator_point->curvature - imu_pose_current->offset_time;
+        Eigen::Matrix3d rotation_point(rotation_imu * math::Exp(angle_velocity_imu, delta_time));
+        Eigen::Vector3d position_point(iterator_point->x, iterator_point->y, iterator_point->z);
+
+        Eigen::Vector3d point_interpolate(position_imu + velocity_imu * delta_time + 0.5 * acc_imu * delta_time * delta_time - ekf_state.position);
+
+        Eigen::Vector3d point_compensate = ekf_state.extrinsic_rotation.conjugate() 
+                                        * (ekf_state.rotation.conjugate() * (rotation_point * (ekf_state.extrinsic_rotation * position_point + ekf_state.extrinsic_translation) + point_interpolate) 
+                                         - ekf_state.extrinsic_translation);
+        
+        iterator_point->x = point_compensate(0);
+        iterator_point->y = point_compensate(1);
+        iterator_point->z = point_compensate(2);
+
+        if(is_1st)
+        {
+          is_1st = false;
+          std::cout << std::setprecision(25)
+                    << "$$$$$$$$$$$$$$$$$ delta_time:" << delta_time
+                    << " rotation_point:" << rotation_point
+                    << " position_point:" << position_point
+                    << " point_interpolate:" << point_interpolate
+                    << " point_compensate:" << point_compensate
+                    << std::endl;
+        }
+
+        if(iterator_point == compensationed_pointcloud.pointcloud.points.begin()) 
+        {
+          break;
+        }
+      }      
+    }
+
+    auto it1 = compensationed_pointcloud.pointcloud.points.begin();
+    auto it2 = compensationed_pointcloud.pointcloud.points.end()-1;
+    std::cout << "-----size:" << compensationed_pointcloud.pointcloud.points.size()
+              << "  x1:" << it1->x << " y1:" << it1->y<< " z1:" << it1->z
+              << "  x2:" << it2->x << " y2:" << it2->y<< " z2:" << it2->z 
+              << std::endl;
 }
 
 void ImuProcessor::Process(EkfProcessor& ekf_processor,

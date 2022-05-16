@@ -14,7 +14,7 @@ namespace registration
 {
 
 // 内部常用函数
-namespace
+namespace math
 {
 
 Eigen::Matrix3d hat(const Eigen::Vector3d& vector3d) 
@@ -112,6 +112,28 @@ Eigen::Quaterniond exp(Eigen::Vector3d vec,
     return Eigen::Quaterniond(cos_sinc.first, xyz[0], xyz[1], xyz[2]);
 }
 
+Eigen::Matrix3d Exp(const Eigen::Vector3d &angle_velocity, const double &delta_time)
+{
+    double angle_velocity_normal = angle_velocity.norm();
+
+    if(angle_velocity_normal > 0.0000001)
+    {
+        Eigen::Vector3d rotation_axis = angle_velocity / angle_velocity_normal;
+        Eigen::Matrix3d k = hat(rotation_axis);
+        double rotation_angle = angle_velocity_normal * delta_time;
+
+        /// Roderigous Tranformation
+        return Eigen::Matrix3d::Identity() 
+              + std::sin(rotation_angle) * k 
+              + (1.0 - std::cos(rotation_angle)) * k * k;
+    }
+    else
+    {
+        return Eigen::Matrix3d::Identity();
+    }
+}
+
+
 Eigen::Matrix<double, 3, 3> AMatrix(Eigen::Vector3d& v)
 {
     Eigen::Matrix<double, 3, 3> res;
@@ -125,8 +147,8 @@ Eigen::Matrix<double, 3, 3> AMatrix(Eigen::Vector3d& v)
 	else
 	{
 		res = Eigen::Matrix<double, 3, 3>::Identity() 
-		    + (1 - std::cos(norm)) / squaredNorm * hat(v) 
-			+ (1 - std::sin(norm) / norm) / squaredNorm * hat(v) * hat(v);
+		    + (1 - std::cos(norm)) / squaredNorm * math::hat(v) 
+			+ (1 - std::sin(norm) / norm) / squaredNorm * math::hat(v) * math::hat(v);
 	}
 
     return res;
@@ -166,13 +188,13 @@ struct GravityManifold
 
 		if(delta.norm() < kDoubleLimit)
 		{
-			value = -hat(gravity)*basis;
+			value = -math::hat(gravity)*basis;
 		}
 		else
 		{
 			Eigen::Vector3d bu = basis*delta;
-            Eigen::Quaterniond delta_rotation = exp(bu, 0.5);
-            value = -delta_rotation.toRotationMatrix()*hat(gravity)*AMatrix(bu).transpose()*basis;
+            Eigen::Quaterniond delta_rotation = math::exp(bu, 0.5);
+            value = -delta_rotation.toRotationMatrix()*math::hat(gravity)*math::AMatrix(bu).transpose()*basis;
 
 		}
 
@@ -181,7 +203,7 @@ struct GravityManifold
         
     Eigen::Matrix<double, 2, 3> CalculateNx()
     {
-        return 1.0/kGravityBase/kGravityBase*basis.transpose()*hat(gravity);
+        return 1.0/kGravityBase/kGravityBase*basis.transpose()*math::hat(gravity);
     }
 
 
@@ -253,10 +275,10 @@ void EkfProcessor::PredictState(double& delta_time,
     Eigen::Matrix<double, 24, 23> df_dx = Eigen::Matrix<double, 24, 23>::Zero();
     df_dx.block<3,3>(0,12) = -Eigen::Matrix3d::Identity();
     df_dx.block<3,3>(3,6) = Eigen::Matrix3d::Identity();
-    df_dx.block<3,3>(6,0) = -1*state_.rotation.toRotationMatrix()*hat(input_state.acc - state_.bias_acc);
+    df_dx.block<3,3>(6,0) = -1*state_.rotation.toRotationMatrix()*math::hat(input_state.acc - state_.bias_acc);
     df_dx.block<3,3>(6,9) = -1*state_.rotation.toRotationMatrix();
 
-    GravityManifold gravity_manifold_old(state_.gravity);
+    math::GravityManifold gravity_manifold_old(state_.gravity);
     Eigen::Matrix<double, 3, 2> mx_old = gravity_manifold_old.CalculateMx(Eigen::Vector2d::Zero());
     df_dx.block<3,2>(6,15) = mx_old;
 
@@ -280,13 +302,13 @@ void EkfProcessor::PredictState(double& delta_time,
 
     // 用 f 预测状态
     EkfState state_old = state_;
-    state_.rotation = state_.rotation*exp(f.block<3,1>(0,0), delta_time/2.0);
+    state_.rotation = state_.rotation*math::exp(f.block<3,1>(0,0), delta_time/2.0);
     state_.position += f.block<3,1>(3,0) * delta_time;
     state_.velocity += f.block<3,1>(6,0) * delta_time;
     state_.bias_acc += f.block<3,1>(9,0) * delta_time;
     state_.bias_gyro += f.block<3,1>(12,0) * delta_time;
-    state_.gravity = exp(f.block<3,1>(15,0), delta_time/2.0)*state_.gravity;
-    state_.extrinsic_rotation = state_.extrinsic_rotation*exp(f.block<3,1>(18,0), delta_time/2.0);
+    state_.gravity = math::exp(f.block<3,1>(15,0), delta_time/2.0)*state_.gravity;
+    state_.extrinsic_rotation = state_.extrinsic_rotation*math::exp(f.block<3,1>(18,0), delta_time/2.0);
     state_.extrinsic_translation += f.block<3,1>(21,0) * delta_time;
     
     // 计算 F_x 和 F_w
@@ -302,10 +324,10 @@ void EkfProcessor::PredictState(double& delta_time,
         std::cout << "####################:" << std::endl;
     }
 
-    Eigen::Quaterniond rotation = exp(rotation_vector, 0.5);
+    Eigen::Quaterniond rotation = math::exp(rotation_vector, 0.5);
     F_x.block<3,3>(0,0) = rotation.toRotationMatrix();
 
-    Eigen::Matrix<double, 3, 3> amatrix_rotation = AMatrix(rotation_vector);
+    Eigen::Matrix<double, 3, 3> amatrix_rotation = math::AMatrix(rotation_vector);
     f_x.block<3,23>(0,0) = amatrix_rotation * df_dx.block<3,23>(0,0);
     f_w.block<3,12>(0,0) = amatrix_rotation * df_dw.block<3,12>(0,0);
 
@@ -335,23 +357,23 @@ void EkfProcessor::PredictState(double& delta_time,
 
     // 计算 F_x 和 F_w  ----- state: gravity
     Eigen::Vector3d gravity_vector = f.block<3,1>(15,0)*delta_time;
-    Eigen::Matrix3d delta_gravity_matrix = exp(gravity_vector, 0.5).toRotationMatrix();
+    Eigen::Matrix3d delta_gravity_matrix = math::exp(gravity_vector, 0.5).toRotationMatrix();
 
-    GravityManifold gravity_manifold_new(state_.gravity);
+    math::GravityManifold gravity_manifold_new(state_.gravity);
     Eigen::Matrix<double, 2, 3> nx = gravity_manifold_new.CalculateNx();
     Eigen::Matrix<double, 3, 2> mx = mx_old;
     F_x.block<2,2>(15,15) = nx * delta_gravity_matrix * mx;
 
-    Eigen::Matrix<double, 2, 3> temp_matrix_1 = -nx * delta_gravity_matrix * hat(state_old.gravity) * AMatrix(gravity_vector).transpose();
+    Eigen::Matrix<double, 2, 3> temp_matrix_1 = -nx * delta_gravity_matrix * math::hat(state_old.gravity) * math::AMatrix(gravity_vector).transpose();
     f_x.block<2,23>(15,0) = temp_matrix_1 * df_dx.block<3,23>(15,0);
     f_w.block<2,12>(15,0) = temp_matrix_1 * df_dw.block<3,12>(15,0); 
 
     // 计算 F_x 和 F_w  ----- state: extrinsic_rotation
     Eigen::Vector3d extrinsic_rotation_vector = -1.0*f.block<3,1>(18,0)*delta_time;
-    Eigen::Quaterniond extrinsic_rotation = exp(extrinsic_rotation_vector, 0.5);
+    Eigen::Quaterniond extrinsic_rotation = math::exp(extrinsic_rotation_vector, 0.5);
     F_x.block<3,3>(17,17) = extrinsic_rotation.toRotationMatrix();
 
-    Eigen::Matrix<double, 3, 3> amatrix_extrinsic_rotation = AMatrix(extrinsic_rotation_vector);
+    Eigen::Matrix<double, 3, 3> amatrix_extrinsic_rotation = math::AMatrix(extrinsic_rotation_vector);
     f_x.block<3,23>(17,0) = amatrix_extrinsic_rotation * df_dx.block<3,23>(17,0);
     f_w.block<3,12>(17,0) = amatrix_extrinsic_rotation * df_dw.block<3,12>(17,0);
 

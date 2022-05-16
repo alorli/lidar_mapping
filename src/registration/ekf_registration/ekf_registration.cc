@@ -59,6 +59,7 @@ EkfRegistration::~EkfRegistration()
 
 void EkfRegistration::AddSensorData(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
+    std::cout << "------------------------------------------------------------------------------------------------------------------" << std::endl;
     common::Time current_lidar_time = common::FromRos(msg->header.stamp);
 
     if(current_lidar_time < last_lidar_time_)
@@ -105,8 +106,6 @@ void EkfRegistration::AddSensorData(const sensor_msgs::PointCloud2::ConstPtr& ms
             }
         }
 
-
-        std::cout << "------------------------------------------------------------------------------------------------------------------" << std::endl;
         std::cout << "lidar_points:" << measurements_.timed_id_lidar_pointcloud.pointcloud.points.size() << std::endl;
 
 
@@ -140,6 +139,7 @@ void EkfRegistration::AddSensorData(const sensor::ImuData& imu_data)
 void EkfRegistration::ProcessPointCloud(pcl::PointCloud<velodyne::Point>& velodyne_pointcloud,
                                         TimedIdLidarPointCloud& timed_id_lidar_pointcloud)
 {
+    bool is_1st = true;
     for(int i=0; i<velodyne_pointcloud.points.size(); i++)
     {
         LidarPointType lidar_point;
@@ -152,6 +152,17 @@ void EkfRegistration::ProcessPointCloud(pcl::PointCloud<velodyne::Point>& velody
         lidar_point.z = velodyne_pointcloud.points[i].z;
         lidar_point.intensity = velodyne_pointcloud.points[i].intensity;
         lidar_point.curvature = velodyne_pointcloud.points[i].time;
+
+        
+        if(is_1st)
+        {
+            is_1st = false;
+            std::cout << std::setprecision(20) 
+                      << "@@@@@@@@@@plsize:" << velodyne_pointcloud.points.size()
+                      << "  lidar_point.curvature:" << lidar_point.curvature
+                      << "  velodyne_pointcloud.points[i].time:" << velodyne_pointcloud.points[i].time
+                      << std::endl;
+        }
 
         if(i % all_parameter_.lidar_process_parameter.ring_filter_interval == 0)
         {
@@ -206,6 +217,16 @@ bool EkfRegistration::PrepareMeasurements()
 
         is_lidar_prepared_ = true;        
     }
+
+    // std::cout << std::setprecision(40) 
+    //           <<  "------delta_time:" << common::ToUniversalSeconds(measurements_.lidar_end_time) - common::ToUniversalSeconds(measurements_.lidar_begin_time)
+    //           <<  "  points.front_time:" << measurements_.timed_id_lidar_pointcloud.pointcloud.points.front().curvature
+    //           <<  "  lidar_start_time:" << common::ToUniversalSeconds(measurements_.lidar_begin_time)
+    //           <<  "  --lidar_start_time:" << common::ToUniversalSeconds(measurements_.lidar_end_time) + measurements_.timed_id_lidar_pointcloud.pointcloud.points.front().curvature
+    //           <<  "  lidar_end_time:" << common::ToUniversalSeconds(measurements_.lidar_end_time)
+    //           <<  "  lidar_mean_scantime:" << lidar_average_scan_period_
+    //           <<  "  lidar_scan_count_:" << lidar_scan_count_ 
+    //           << std::endl;
 
    // 如果IMU数据还没有充满整个雷达的扫描周期
    if(last_imu_time_ < measurements_.lidar_end_time)
