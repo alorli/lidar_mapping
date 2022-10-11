@@ -390,7 +390,7 @@ MapBuilder::~MapBuilder()
     }
 }
 
-/*
+
 void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
     registration::TimedIdPointCloud timed_id_pointcloud;
@@ -495,8 +495,9 @@ void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& 
     alignment_result_previous_ = ndt_registration_.GetAlignmentResult();
     timed_id_pointcloud_previous_ = timed_id_pointcloud;
 }
-*/
 
+
+/*
 void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
     // registration::TimedIdPointCloud timed_id_pointcloud;
@@ -512,6 +513,7 @@ void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& 
 // 
     ekf_registration_.AddSensorData(msg);
 }
+*/
 
 
 void MapBuilder::AddGnssFixData(const sensor_msgs::NavSatFix::ConstPtr& msg)
@@ -629,7 +631,7 @@ void MapBuilder::AddSickData(const sensor_msgs::LaserScan::ConstPtr& msg)
 }
 
 
-/*
+
 void MapBuilder::AddSensorData(const sensor::ImuData& imu_data)
 {
     if(extrapolator_ptr_ != nullptr)
@@ -645,13 +647,14 @@ void MapBuilder::AddSensorData(const sensor::ImuData& imu_data)
         9.8,
         imu_data);
 }
-*/
 
+
+/*
 void MapBuilder::AddSensorData(const sensor::ImuData& imu_data)
 {
     ekf_registration_.AddSensorData(imu_data);
 }
-
+*/
 
 
 void MapBuilder::AddSensorData(const sensor::OdometryData& odometry_data)

@@ -18,7 +18,7 @@ GnssOptimization::GnssOptimization(std::string cfg_file_path,
       is_get_gnss_position_init_(false),
       project_directory_name_(project_directory_name)
 {
-    // 2021-04-14之前使用
+    // 2022-05-23之前使用
     // // 雷达里程计信息矩阵
     // lidar_odom_information_ << 320.0,          0.0,         0.0,          0.0,          0.0,           0.0,
     //                            0.0,            320.0,       0.0,          0.0,          0.0,           0.0,
@@ -33,7 +33,7 @@ GnssOptimization::GnssOptimization(std::string cfg_file_path,
     //                            0.0,            0.0,           10.0;
 
 
-    // 雷达里程计信息矩阵
+    // 2022-05-23起重机园区建图时修改后
     lidar_odom_information_ << 320.0,          0.0,         0.0,          0.0,          0.0,           0.0,
                                0.0,            320.0,       0.0,          0.0,          0.0,           0.0,
                                0.0,            0.0,         500.0,        0.0,          0.0,           0.0,
@@ -42,9 +42,9 @@ GnssOptimization::GnssOptimization(std::string cfg_file_path,
                                0.0,            0.0,         0.0,          0.0,          0.0,           20000.0;
 
     // 雷达-gnss信息矩阵
-    lidar_gnss_information_ << 25.0,          0.0,           0.0,
-                               0.0,            25.0,         0.0,
-                               0.0,            0.0,           10.0;
+    lidar_gnss_information_ << 10.0,          0.0,           0.0,
+                               0.0,            10.0,         0.0,
+                               0.0,            0.0,           5.0;
 
 }
 

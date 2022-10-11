@@ -678,8 +678,8 @@ int main(int argc, char** argv)
 	std::stringstream ss;
 	ss << std::put_time(std::localtime(&time_now), "%Y-%m-%d-%H-%M-%S");
 
-	std::string project_directory_name = ss.str();
-    // std::string project_directory_name = "2022-03-16-11-19-45";
+	// std::string project_directory_name = ss.str();
+    std::string project_directory_name = "2022-07-26-11-31-59";
 
     std::cout << "poject_directory_name:" << project_directory_name << std::endl;
 
