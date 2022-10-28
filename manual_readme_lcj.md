@@ -19,7 +19,7 @@
 # 2.6 cfg.yaml中：map_builder -> dual_antenna_parameter -> is_use_dual_antenna 设置成 false，不使用双天线建图
 
 ### ----------------------------------------------------------------------------------------------------------------------------------
-### 3.只使用多线激光雷达建图
+### 3.使用多线激光雷达建图 + 双天线RTK
 # 3.1 cfg.yaml中：ros_interface -> subscribe_message -> is_use_lidar 设置成 true，其他改成 false
 #                ros_interface -> subscribe_message -> is_use_gnss 设置成 true，其他改成 false
 # 3.2 cfg.yaml中：directory -> project_directory 功能目录根据需要设置

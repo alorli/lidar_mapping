@@ -4,8 +4,8 @@
 ros_interface:
   subscribe_message:
     is_use_lidar: true
-    is_use_gnss: true
-    is_use_sick: false
+    is_use_gnss: false
+    is_use_sick: true
     is_use_imu: false
     is_use_odom: false
     is_use_encoder: false
@@ -53,8 +53,8 @@ ros_interface:
 
 # 目录参数配置
 directory:
-  project_directory: /home/alorli/test_data/huilongguan_2022_07_26/     # 工程文件主目录
-  save_map_full_directory: /home/alorli/WORK_SPACE_LCJ/map/          # 定位地图保存路径
+  project_directory: /home/alorli/test_data/huilongguan_2022_10_27/     # 工程文件主目录
+  save_map_full_directory: /home/alorli/WORK_SPACE_LCJ/map/             # 定位地图保存路径
 
   map:
     main_directory: map/
@@ -106,15 +106,15 @@ directory:
 
 
 lidar_mapping_node:
-  is_run_gnss_aidded_optimization: true
-  is_run_closeloop_optimization: true
+  is_run_gnss_aidded_optimization: false
+  is_run_closeloop_optimization: false
   is_generate_raw_map: true
   is_generate_compensation_map: true
-  is_generate_gnss_optimization_map: true
-  is_generate_closeloop_optimization_map: true
-  is_generate_laserscan_map: false
-  is_run_map_partition: true
-  is_generate_arealist_file: true
+  is_generate_gnss_optimization_map: false
+  is_generate_closeloop_optimization_map: false
+  is_generate_laserscan_map: true
+  is_run_map_partition: false
+  is_generate_arealist_file: false
   is_delete_project_directory_after_save_map: false   # 保存地图以后，是否删除工程目录，以节省空间，部署到车上时，设置成 true，节省空间
 
 

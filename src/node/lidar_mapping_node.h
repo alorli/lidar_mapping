@@ -64,15 +64,11 @@ public:
 
     
     void HandlePointCloud2Message(const sensor_msgs::PointCloud2::ConstPtr& msg);
-
     void HandleGnssFixMessage(const sensor_msgs::NavSatFix::ConstPtr& msg);
-
     void HandleSickMessage(const sensor_msgs::LaserScan::ConstPtr& msg);
-
     void HandleImuMessage(const sensor_msgs::Imu::ConstPtr& msg);
     void HandleOdomMessage(const nav_msgs::Odometry::ConstPtr& msg);
     void HandleEncoderMessage(const std_msgs::Int64MultiArray::ConstPtr& msg);
-
 
     bool GenerateMapCallback(lidar_mapping::generate_map_srv::Request  &req,
                              lidar_mapping::generate_map_srv::Response &res);
