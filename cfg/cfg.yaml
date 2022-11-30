@@ -45,7 +45,7 @@ ros_interface:
   advertise_service:
     is_publish_generate_map_service: true
     generate_map_service_name: /generate_map
-    is_publish_start_builder_service: true        # 如果设置等待开始建图的 service，则等待开始建图的service后，开始建图，否则，开机自动开始接收数据建图
+    is_publish_start_builder_service: false        # 如果设置等待开始建图的 service，则等待开始建图的service后，开始建图，否则，开机自动开始接收数据建图
     start_builder_service_name: /start_builder
     is_publish_save_map_service: true        
     save_map_service_name: /save_map
@@ -53,7 +53,7 @@ ros_interface:
 
 # 目录参数配置
 directory:
-  project_directory: /home/alorli/test_data/nantingchechang/     # 工程文件主目录
+  project_directory: /home/alorli/test_data/test_ekf/     # 工程文件主目录
   save_map_full_directory: /home/alorli/WORK_SPACE_LCJ/map/      # 定位地图保存路径
 
   map:
@@ -197,9 +197,18 @@ ekf_registration:
     rotation: [1.0, 0.0, 0.0, 
                0.0, 1.0, 0.0, 
                0.0, 0.0, 1.0]
+  local_map:
+    cube_length: 1000.0
+    move_threshold: 1.5
+    delta_range: 300.0
+    filter_size_surf: 0.5
+    filter_size_map: 0.5
   ekf_parameter:
-    max_iteration: 4
+    max_iteration: 3
     converge_threshold: 0.001
+    converge_limit: 0.001
+    extrinsic_estimate_enable: true
+    
     
 
 

@@ -75,6 +75,8 @@
         "shared_mutex": "cpp",
         "core": "cpp",
         "numericaldiff": "cpp",
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "any": "cpp",
+        "variant": "cpp"
     }
 }

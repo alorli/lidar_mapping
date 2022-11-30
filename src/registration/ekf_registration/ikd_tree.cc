@@ -1,5 +1,8 @@
 #include "ikd_tree.h"
 
+namespace ikd_tree
+{
+
 KD_TREE::KD_TREE(float delete_param, float balance_param, float box_length) 
 {
     delete_criterion_param = delete_param;
@@ -1745,4 +1748,5 @@ int MANUAL_Q::size()
     return counter;
 }
 
+}
 

@@ -2,7 +2,10 @@ cmake_minimum_required(VERSION 3.0.2)
 project(lidar_mapping)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++14)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread" )
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -pthread -std=c++0x -std=c++14 -fexceptions" )
 
 # debug 版本将会导致 NDT配准的时间非常长
 SET(CMAKE_BUILD_TYPE "Release")
@@ -29,6 +32,12 @@ endif ()
 
 message(STATUS "----------------PCL_INCLUDE_DIRS:" ${PCL_INCLUDE_DIRS})
 message(STATUS "----------------PCL_LIBRARIES:" ${PCL_LIBRARIES})
+
+add_subdirectory("${PROJECT_SOURCE_DIR}/3rd_party/abseil-cpp")
+
+# 可能与lidar_localizatioin 中的 abseil-cpp冲突，暂时屏蔽
+# added by lichunjing 2021-08-10
+# add_subdirectory(${PROJECT_SOURCE_DIR}/3rd_party/abseil-cpp)
 
 
 ## Find catkin macros and libraries
@@ -173,13 +182,6 @@ include_directories(
   ${CHOLMOD_INCLUDE_DIR}
 )
 
-# 可能与lidar_localizatioin 中的 abseil-cpp冲突，暂时屏蔽
-# added by lichunjing 2021-08-10
-# add_subdirectory(${PROJECT_SOURCE_DIR}/3rd_party/abseil-cpp)
-
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread" )
-
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/lidar_mapping.cpp
@@ -210,10 +212,12 @@ add_executable(lidar_mapping_node src/node/lidar_mapping_node.cc
                                   src/constraints/gnss_constraints_builder.cc
                                   src/constraints/closeloop_constraints_builder.cc
                                   src/optimization/gnss_optimization.cc
+                                  src/registration/ekf_registration/common_types.cc
                                   src/registration/ndt_registration/ndt_registration.cc
                                   src/registration/ekf_registration/ekf_registration.cc
                                   src/registration/ekf_registration/imu_processor.cc
                                   src/registration/ekf_registration/ekf_processor.cc
+                                  src/registration/ekf_registration/ikd_tree.cc
                                   src/common/time_conversion.cc
                                   src/common/time.cc
                                   src/common/common.cc
@@ -263,14 +267,14 @@ target_link_libraries(lidar_mapping_node
                      )
 
 ############################### map_visualization_node ###############################
-# add_executable(map_visualization_node src/node/map_visualization_node.cc
-#               )
+add_executable(map_visualization_node src/node/map_visualization_node.cc
+              )
 
-# target_link_libraries(map_visualization_node
-#                       ${catkin_LIBRARIES}
-#                       ${PCL_LIBRARIES}
-#                       /usr/local/lib/libyaml-cpp.so
-#                      )
+target_link_libraries(map_visualization_node
+                      ${catkin_LIBRARIES}
+                      ${PCL_LIBRARIES}
+                      /usr/local/lib/libyaml-cpp.so
+                     )
 
 
 ############################### to_grid_map_node ###############################
