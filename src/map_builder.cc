@@ -391,10 +391,7 @@ MapBuilder::~MapBuilder()
 }
 
 
-<<<<<<< HEAD
-=======
 /*
->>>>>>> e2709c723663b5867fe795340ebf9daafa617e1c
 void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
     registration::TimedIdPointCloud timed_id_pointcloud;
@@ -655,7 +652,7 @@ void MapBuilder::AddSickData(const sensor_msgs::LaserScan::ConstPtr& msg)
 }
 
 
-
+/*
 void MapBuilder::AddSensorData(const sensor::ImuData& imu_data)
 {
     if(extrapolator_ptr_ != nullptr)
@@ -671,14 +668,14 @@ void MapBuilder::AddSensorData(const sensor::ImuData& imu_data)
         9.8,
         imu_data);
 }
+*/
 
 
-/*
 void MapBuilder::AddSensorData(const sensor::ImuData& imu_data)
 {
     ekf_registration_.AddSensorData(imu_data);
 }
-*/
+
 
 
 void MapBuilder::AddSensorData(const sensor::OdometryData& odometry_data)

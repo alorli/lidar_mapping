@@ -6,10 +6,10 @@ ros_interface:
     is_use_lidar: true
     is_use_gnss: false
     is_use_sick: true
-    is_use_imu: false
+    is_use_imu: true
     is_use_odom: false
     is_use_encoder: false
-    lidar_topic: /points_raw    # /points_raw   /velodyne_points
+    lidar_topic: /velodyne_points    # /points_raw   /velodyne_points
     lidar_queue_size: 1000000    #10hz 存 27小时数据
     sick_topic: /scan
     sick_queue_size: 1000000    
