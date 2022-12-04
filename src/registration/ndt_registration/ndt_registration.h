@@ -6,6 +6,7 @@
 
 #include "src/common/time.h"
 #include "src/common/time_conversion.h"
+#include "src/registration/common.h"    //added by lichunjing 2022_12_02
 
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
@@ -21,14 +22,14 @@
 namespace registration
 {
 
-typedef pcl::PointXYZI PointType;
+// typedef pcl::PointXYZI PointType;
 
-struct TimedIdPointCloud
-{
-    common::Time time;
-    long long allframe_id;
-    pcl::PointCloud<PointType> pointcloud;
-};
+// struct TimedIdPointCloud
+// {
+//     common::Time time;
+//     long long allframe_id;
+//     pcl::PointCloud<PointType> pointcloud;
+// };
 
 struct NdtParameter
 {
@@ -47,14 +48,14 @@ struct FilterParameter
     double scale_voxel_leaf_size;
 };
 
-struct AlignmentResult
-{
-    bool is_converged;
-    double fitness_score;
-    double time_duration_ms;
-    int final_num_iteration;
-    Eigen::Matrix4f final_transform;
-};
+// struct AlignmentResult
+// {
+//     bool is_converged;
+//     double fitness_score;
+//     double time_duration_ms;
+//     int final_num_iteration;
+//     Eigen::Matrix4f final_transform;
+// };
 
 struct MappingParameter
 {

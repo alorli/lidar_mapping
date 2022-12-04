@@ -108,8 +108,8 @@ directory:
 lidar_mapping_node:
   is_run_gnss_aidded_optimization: true
   is_run_closeloop_optimization: false
-  is_generate_raw_map: false
-  is_generate_compensation_map: false
+  is_generate_raw_map: true
+  is_generate_compensation_map: true
   is_generate_gnss_optimization_map: true
   is_generate_closeloop_optimization_map: false
   is_generate_laserscan_map: false

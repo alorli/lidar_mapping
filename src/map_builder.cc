@@ -390,6 +390,7 @@ MapBuilder::~MapBuilder()
     }
 }
 
+
 /*
 void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
@@ -441,7 +442,13 @@ void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& 
 
     if(is_save_vlp_raw_pcd_)
     {
-        SaveVlpRawPcd(timed_id_pointcloud);
+        //SaveVlpRawPcd(timed_id_pointcloud);
+
+        // added by lichunjing 2022-12-02
+        SaveVlpRawPcd(timed_id_pointcloud,
+                      ndt_registration_.GetAlignmentResult());
+
+        
 
         // added by lichunjing 2021-04-14
         // SaveVlpRawPcd(timed_id_pointcloud_compensation);
@@ -476,7 +483,11 @@ void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& 
         // 这里不加预测位姿，实际使用的是线性递推得到的位姿作为预测位姿
         ndt_registration_compensation_.AddSensorData(timed_id_pointcloud_compensation);
 
-        SaveVlpCompensationPcd(timed_id_pointcloud_compensation);
+        // SaveVlpCompensationPcd(timed_id_pointcloud_compensation);
+
+        // added by lichunjing 2022-12-02
+        SaveVlpCompensationPcd(timed_id_pointcloud_compensation, 
+                               ndt_registration_compensation_.GetAlignmentResult());
 
         // added by lichunjing 2022-03-22
         if(is_save_compensation_bag_)
@@ -495,22 +506,34 @@ void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& 
     alignment_result_previous_ = ndt_registration_.GetAlignmentResult();
     timed_id_pointcloud_previous_ = timed_id_pointcloud;
 }
+
 */
+
 
 void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
-    // registration::TimedIdPointCloud timed_id_pointcloud;
-    // pcl::fromROSMsg(*msg, timed_id_pointcloud.pointcloud);
-// 
-    // std::vector<int> indices;
-    // pcl::removeNaNFromPointCloud(timed_id_pointcloud.pointcloud,
-                                //  timed_id_pointcloud.pointcloud,
-                                //  indices);
-// 
-    // timed_id_pointcloud.time = common::FromRos(msg->header.stamp);
-    // timed_id_pointcloud.allframe_id = allframe_id_;
-// 
     ekf_registration_.AddSensorData(msg);
+
+    // 保存原始点云
+    registration::TimedIdPointCloud timed_id_pointcloud_raw;
+    ekf_registration_.GetTimedIdPointCloudRaw(timed_id_pointcloud_raw);
+    registration::AlignmentResult alignment_result_raw = ekf_registration_.GetAlignmentResult();
+    if(alignment_result_raw.is_converged)
+    {
+        SaveVlpRawPcd(timed_id_pointcloud_raw, 
+                      alignment_result_raw);
+    }
+
+    // 保存去畸变后的点云
+    registration::TimedIdPointCloud timed_id_pointcloud_compensation;
+    ekf_registration_.GetTimedIdPointCloudRawCompensationed(timed_id_pointcloud_compensation);
+    registration::AlignmentResult alignment_result_compensation = ekf_registration_.GetAlignmentResult();
+    if(alignment_result_compensation.is_converged)
+    {
+        SaveVlpCompensationPcd(timed_id_pointcloud_compensation, 
+                               alignment_result_compensation);
+    }
+    
 }
 
 
@@ -685,7 +708,9 @@ void MapBuilder::CloseloopOptimization()
                                             closeloop_constraints_builder_.GetCloseloopConstraints());
 }
 
-void MapBuilder::SaveVlpRawPcd(registration::TimedIdPointCloud& timed_id_pointcloud)
+// void MapBuilder::SaveVlpRawPcd(registration::TimedIdPointCloud& timed_id_pointcloud)
+void MapBuilder::SaveVlpRawPcd(registration::TimedIdPointCloud& timed_id_pointcloud,
+                               registration::AlignmentResult alignment_result_raw)
 {
 	std::stringstream file_name;
     file_name << save_velodyne_raw_pointcloud_path_ << timed_id_pointcloud.allframe_id << ".pcd";
@@ -693,8 +718,8 @@ void MapBuilder::SaveVlpRawPcd(registration::TimedIdPointCloud& timed_id_pointcl
 	pcl::io::savePCDFileBinaryCompressed(file_name.str().c_str(),
 										 timed_id_pointcloud.pointcloud);
 
-	registration::AlignmentResult alignment_result_raw
-        = ndt_registration_.GetAlignmentResult();
+	// registration::AlignmentResult alignment_result_raw
+    //     = ndt_registration_.GetAlignmentResult();
 
     velodyne_raw_filelist_ << std::setprecision(15)
                            << timed_id_pointcloud.allframe_id
@@ -723,7 +748,8 @@ void MapBuilder::SaveVlpRawPcd(registration::TimedIdPointCloud& timed_id_pointcl
                   << std::endl;
 }
 
-void MapBuilder::SaveVlpCompensationPcd(registration::TimedIdPointCloud& timed_id_pointcloud_compensation)
+void MapBuilder::SaveVlpCompensationPcd(registration::TimedIdPointCloud& timed_id_pointcloud_compensation,
+                                        registration::AlignmentResult alignment_result_compensation)
 {
 	std::stringstream file_name;
     file_name << save_velodyne_compensation_pointcloud_path_ << timed_id_pointcloud_compensation.allframe_id << ".pcd";
@@ -731,8 +757,8 @@ void MapBuilder::SaveVlpCompensationPcd(registration::TimedIdPointCloud& timed_i
 	pcl::io::savePCDFileBinaryCompressed(file_name.str().c_str(),
 										 timed_id_pointcloud_compensation.pointcloud);
 
-	registration::AlignmentResult alignment_result_compensation
-        = ndt_registration_compensation_.GetAlignmentResult();
+	// registration::AlignmentResult alignment_result_compensation
+    //     = ndt_registration_compensation_.GetAlignmentResult();
 
     velodyne_compensation_filelist_ << std::setprecision(15)
                                     << timed_id_pointcloud_compensation.allframe_id

@@ -104,7 +104,7 @@ struct TimedIdLidarPointCloud
     TimedIdLidarPointCloud():
         pointcloud_ptr(new pcl::PointCloud<LidarPointType>())
     {
-        std::cout << "-------construct TimedIdLidarPointCloud!" << std::endl;
+        // std::cout << "-------construct TimedIdLidarPointCloud!" << std::endl;
     };
 
 
@@ -115,16 +115,6 @@ struct TimedIdLidarPointCloud
 
 struct TimedImuPose
 {
-    // TimedImuPose()
-    // {
-        // offset_time = 0.0;
-        // acc = Eigen::Vector3d::Zero();
-        // gyro = Eigen::Vector3d::Zero();
-        // velocity = Eigen::Vector3d::Zero();
-        // position = Eigen::Vector3d::Zero();
-        // rotation = Eigen::Quaterniond::Identity();
-    // };
-
     double offset_time;
     Eigen::Vector3d acc;
     Eigen::Vector3d gyro;
@@ -157,31 +147,6 @@ constexpr double kEkfInitTime = 0.1;
 constexpr double kLaserPointcovariance = 0.001;
 constexpr int KNumPointsEstimatePlane = 5;
 
-/*   原始状态变量定义
-struct EkfState
-{
-    EkfState()
-    {
-        rotation = Eigen::Quaterniond::Identity();
-        position = Eigen::Vector3d::Zero();
-        velocity = Eigen::Vector3d::Zero();
-        bias_acc = Eigen::Vector3d::Zero();
-        bias_gyro = Eigen::Vector3d::Zero();
-        gravity = kGravityBase * Eigen::Vector3d(std::sqrt(1), 0, 0);
-        extrinsic_rotation = Eigen::Quaterniond::Identity();
-        extrinsic_translation = Eigen::Vector3d::Zero();
-    };
-
-    Eigen::Quaterniond rotation;                  //0
-    Eigen::Vector3d position;                     //3
-    Eigen::Vector3d velocity;                     //6
-    Eigen::Vector3d bias_acc;                     //9
-    Eigen::Vector3d bias_gyro;                    //12
-    Eigen::Vector3d gravity;                      //15
-    Eigen::Quaterniond extrinsic_rotation;        //18
-    Eigen::Vector3d extrinsic_translation;        //21
-};
-*/
 
 struct EkfState
 {

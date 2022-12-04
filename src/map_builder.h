@@ -95,8 +95,10 @@ public:
     void AddSickData(const sensor_msgs::LaserScan::ConstPtr& msg);
     void AddSensorData(const sensor::ImuData& imu_data);
     void AddSensorData(const sensor::OdometryData& odometry_data);
-    void SaveVlpCompensationPcd(registration::TimedIdPointCloud& timed_id_pointcloud_compensation);
-    void SaveVlpRawPcd(registration::TimedIdPointCloud& timed_id_pointcloud);
+    void SaveVlpCompensationPcd(registration::TimedIdPointCloud& timed_id_pointcloud_compensation,
+                                registration::AlignmentResult alignment_result_compensation);
+    void SaveVlpRawPcd(registration::TimedIdPointCloud& timed_id_pointcloud, 
+                       registration::AlignmentResult alignment_result_raw);
     void GenerateCompensationMap();
     void GenerateRawMap();
     void GnssAidedOptimization();

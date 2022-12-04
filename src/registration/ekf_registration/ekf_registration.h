@@ -7,6 +7,7 @@
 #include "src/common/time.h"
 #include "src/common/time_conversion.h"
 #include "src/sensor/imu_data.h"
+#include "src/registration/common.h"    //added by lichunjing 2022_12_02
 
 #include "sensor_msgs/PointCloud2.h"
 
@@ -44,6 +45,10 @@ public:
     void MoveMap();
     void UpdateMap();
 
+    const AlignmentResult GetAlignmentResult() {return alignment_result_;};
+    void GetTimedIdPointCloudRaw(TimedIdPointCloud& timed_id_pointcloud_raw);
+    void GetTimedIdPointCloudRawCompensationed(TimedIdPointCloud& timed_id_pointcloud_raw_compensationed);
+
 private:
     YAML::Node cfg_file_;
     AllParameter all_parameter_;
@@ -57,9 +62,13 @@ private:
     std::deque<sensor::ImuData> imu_data_buffer_;
     int num_features_points_downsize_ = 0;     //提取的特征点,进行降采样后的点数
     Measurements measurements_;                                    //这里默认调用TimedIdLidarPointCloud的无参构造函数
-    TimedIdLidarPointCloud compensationed_features_pointcloud_;    //这里默认调用TimedIdLidarPointCloud的无参构造函数
+    TimedIdLidarPointCloud timed_id_lidar_pointcloud_raw_;         //这里默认调用TimedIdLidarPointCloud的无参构造函数
+    TimedIdLidarPointCloud timed_id_lidar_pointcloud_raw_compensationed_;         //这里默认调用TimedIdLidarPointCloud的无参构造函数
+    TimedIdLidarPointCloud compensationed_features_pointcloud_;                   //这里默认调用TimedIdLidarPointCloud的无参构造函数
     TimedIdLidarPointCloud compensationed_features_pointcloud_downsize_lidar_;    //这里默认调用TimedIdLidarPointCloud的无参构造函数
     TimedIdLidarPointCloud compensationed_features_pointcloud_downsize_world_;    //这里默认调用TimedIdLidarPointCloud的无参构造函数
+
+    AlignmentResult alignment_result_;   //added by lichunjing 2022_12_02
     
     long long lidar_allframe_id_;
     common::Time last_lidar_time_;

@@ -19,7 +19,8 @@ ikd_tree::KD_TREE global_ikd_tree;
 EkfRegistration::EkfRegistration(std::string cfg_file_path)
     :imu_processor_(cfg_file_path),
      ekf_processor_(cfg_file_path),
-     ekf_state_()
+     ekf_state_(),
+     alignment_result_({true, 0.0, 0.0, 1, Eigen::Matrix4f::Identity()})
 {
     cfg_file_ = YAML::LoadFile(cfg_file_path + "/cfg.yaml");
 
@@ -82,7 +83,10 @@ EkfRegistration::~EkfRegistration()
 
 void EkfRegistration::AddSensorData(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
-    std::cout << "------------------------------------------------------------------------------------------------------------------" << std::endl;
+    // std::cout << "------------------------------------------------------------------------------------------------------------------" << std::endl;
+    std::chrono::steady_clock::time_point time_start = std::chrono::steady_clock::now();
+
+
     common::Time current_lidar_time = common::FromRos(msg->header.stamp);
 
     if(current_lidar_time < last_lidar_time_)
@@ -97,6 +101,14 @@ void EkfRegistration::AddSensorData(const sensor_msgs::PointCloud2::ConstPtr& ms
     timed_id_lidar_pointcloud.time = current_lidar_time;
     timed_id_lidar_pointcloud.allframe_id = allframe_id++;
 
+    timed_id_lidar_pointcloud_raw_.time = current_lidar_time;
+    timed_id_lidar_pointcloud_raw_.allframe_id = timed_id_lidar_pointcloud.allframe_id;
+    timed_id_lidar_pointcloud_raw_.pointcloud_ptr->points.clear();
+
+    timed_id_lidar_pointcloud_raw_compensationed_.time = current_lidar_time;
+    timed_id_lidar_pointcloud_raw_compensationed_.allframe_id = timed_id_lidar_pointcloud.allframe_id;
+    timed_id_lidar_pointcloud_raw_compensationed_.pointcloud_ptr->points.clear();
+
     pcl::PointCloud<velodyne::Point> velodyne_pointcloud;
     pcl::fromROSMsg(*msg, velodyne_pointcloud);
 
@@ -106,9 +118,31 @@ void EkfRegistration::AddSensorData(const sensor_msgs::PointCloud2::ConstPtr& ms
 
     if(PrepareMeasurements())
     {
+        if(!is_start_)
+        {
+            if(measurements_.imu_data_buffer.size() >= 40)
+            {
+                is_start_ = true;
+            }
+            else
+            {
+                alignment_result_.is_converged = false;
+                return;
+            }
+        }
+
+        if(is_first_scan_)
+        {
+            first_lidar_time_ = measurements_.lidar_begin_time;
+            is_first_scan_ = false;
+            alignment_result_.is_converged = false;
+            return;
+        }
+
+
         // if(!is_start_)
         // {
-        //     if(measurements_.imu_data_buffer.size() >= 40)
+        //     if(measurements_.timed_id_lidar_pointcloud.pointcloud_ptr->points.size() == 4984)
         //     {
         //         is_start_ = true;
         //     }
@@ -117,33 +151,16 @@ void EkfRegistration::AddSensorData(const sensor_msgs::PointCloud2::ConstPtr& ms
         //         return;
         //     }
         // }
-
-        if(is_first_scan_)
-        {
-            first_lidar_time_ = measurements_.lidar_begin_time;
-            is_first_scan_ = false;
-            return;
-        }
-
-        if(!is_start_)
-        {
-            if(measurements_.timed_id_lidar_pointcloud.pointcloud_ptr->points.size() == 4984)
-            {
-                is_start_ = true;
-            }
-            else
-            {
-                return;
-            }
-        }
         
-
+        
         std::cout << std::setprecision(25) << std::endl;
         std::cout << std::endl << std::endl << std::endl;
         std::cout << "\033[32m" << "------------------------------------------------------------------------------------------------------------------" << "\033[0m" << std::endl;
         std::cout << "---------allframe_id:" << measurements_.timed_id_lidar_pointcloud.allframe_id
                   << "   lidar_points:" << measurements_.timed_id_lidar_pointcloud.pointcloud_ptr->points.size() 
                   << std::endl;
+
+
 
         // 显示这个雷达旋转周期内IMU的数据
         // for(int i=0; i<measurements_.imu_data_buffer.size(); i++)
@@ -156,20 +173,22 @@ void EkfRegistration::AddSensorData(const sensor_msgs::PointCloud2::ConstPtr& ms
 
         imu_processor_.Process(ekf_processor_, 
                                measurements_,
-                               compensationed_features_pointcloud_);
+                               compensationed_features_pointcloud_,
+                               timed_id_lidar_pointcloud_raw_compensationed_
+                               );
         
         // EkfState ekf_state = ekf_processor_.GetEkfState();
         ekf_state_ = ekf_processor_.GetEkfState();
 
         lidar_position_ = ekf_state_.position + ekf_state_.rotation * ekf_state_.extrinsic_translation;
 
-        // std::cout << "\033[032m" << "*******************444444444444*****************" << "\033[0m" << std::endl;
-        std::cout << "------predict lidar_position_:" << lidar_position_.transpose()
-                  << std::endl;
+        // std::cout << "------predict lidar_position_:" << lidar_position_.transpose()
+        //           << std::endl;
 
         if(compensationed_features_pointcloud_.pointcloud_ptr->empty())
         {
             ROS_WARN("No point, skip this scan!\n");
+            alignment_result_.is_converged = false;
             return;
         }
 
@@ -202,17 +221,19 @@ void EkfRegistration::AddSensorData(const sensor_msgs::PointCloud2::ConstPtr& ms
 
                 global_ikd_tree.Build(compensationed_features_pointcloud_downsize_world_.pointcloud_ptr->points);
             }
+            alignment_result_.is_converged = false;
             return;
         }
 
         int features_from_map_num = global_ikd_tree.validnum();
 
-        std::cout << "------------features_from_map_num:" << features_from_map_num << std::endl;
+        // std::cout << "------------features_from_map_num:" << features_from_map_num << std::endl;
 
         /*** ICP 和 EKF 更新 ***/
         if(num_features_points_downsize_ < 5)
         {
             ROS_WARN("No point, skip this scan!\n");
+            alignment_result_.is_converged = false;
             return;
         }
 
@@ -240,16 +261,50 @@ void EkfRegistration::AddSensorData(const sensor_msgs::PointCloud2::ConstPtr& ms
 
         ekf_state_ = ekf_processor_.GetEkfState();
 
+        // 雷达位姿是以imu初始位姿为参考的，例如当初始时刻 ekf_state_.position和ekf_state_.rotation都是0时，算出来的雷达位姿就是雷达-imu外参，也就是雷达在imu坐标系中的位姿
         lidar_position_ = ekf_state_.position + ekf_state_.rotation * ekf_state_.extrinsic_translation;
 
-        // Eigen::Vector3d lidar_position1= ekf_state1.position + ekf_state1.rotation * ekf_state1.extrinsic_translation;
-
-        // std::cout << "\033[032m" << "*******************444444444444*****************" << "\033[0m" << std::endl;
-        std::cout << "------update lidar_position1:" << lidar_position_.transpose()
+        std::cout << "------update lidar_position:" << lidar_position_.transpose()
                   << std::endl;
 
+        // 保存配准结果：
+        std::chrono::steady_clock::time_point time_now = std::chrono::steady_clock::now();
+        std::chrono::duration<double> delta_time
+            = std::chrono::duration_cast<std::chrono::duration<double>>(time_now - time_start);
+
+        Eigen::Quaterniond lidar_rotation = ekf_state_.rotation * ekf_state_.extrinsic_rotation;  
+        Eigen::Matrix3d lidar_rotation_matrix = lidar_rotation.matrix();
+        Eigen::Matrix4f lidar_transformation = Eigen::Matrix4f::Identity();
+        lidar_transformation(0,0) = static_cast<float>(lidar_rotation_matrix(0,0)); 
+        lidar_transformation(0,1) = static_cast<float>(lidar_rotation_matrix(0,1)); 
+        lidar_transformation(0,2) = static_cast<float>(lidar_rotation_matrix(0,2)); 
+        lidar_transformation(0,3) = static_cast<float>(lidar_position_(0));
+
+        lidar_transformation(1,0) = static_cast<float>(lidar_rotation_matrix(1,0)); 
+        lidar_transformation(1,1) = static_cast<float>(lidar_rotation_matrix(1,1)); 
+        lidar_transformation(1,2) = static_cast<float>(lidar_rotation_matrix(1,2)); 
+        lidar_transformation(1,3) = static_cast<float>(lidar_position_(1));
+
+        lidar_transformation(2,0) = static_cast<float>(lidar_rotation_matrix(2,0)); 
+        lidar_transformation(2,1) = static_cast<float>(lidar_rotation_matrix(2,1)); 
+        lidar_transformation(2,2) = static_cast<float>(lidar_rotation_matrix(2,2)); 
+        lidar_transformation(2,3) = static_cast<float>(lidar_position_(2));
+
+        alignment_result_.is_converged = true;
+        alignment_result_.time_duration_ms = delta_time.count()*1000.0;
+        alignment_result_.fitness_score = 1.0;
+        alignment_result_.final_num_iteration = 1;
+        alignment_result_.final_transform = lidar_transformation;
+        
         UpdateMap();
     }
+
+
+    std::chrono::steady_clock::time_point time_end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> delta_time
+        = std::chrono::duration_cast<std::chrono::duration<double>>(time_end - time_start);
+    
+    std::cout << "--------------delta_time:" << delta_time.count()*1000.0 << std::endl;
 }
 
 void EkfRegistration::AddSensorData(const sensor::ImuData& imu_data)
@@ -291,6 +346,9 @@ void EkfRegistration::ProcessPointCloud(pcl::PointCloud<velodyne::Point>& velody
         //               << "  velodyne_pointcloud.points.at(i).time:" << velodyne_pointcloud.points.at(i).time
         //               << std::endl;
         // }
+
+        timed_id_lidar_pointcloud_raw_.pointcloud_ptr->points.push_back(lidar_point);
+        timed_id_lidar_pointcloud_raw_compensationed_.pointcloud_ptr->points.push_back(lidar_point);
 
         if(i % all_parameter_.lidar_process_parameter.ring_filter_interval == 0)
         {
@@ -369,8 +427,8 @@ bool EkfRegistration::PrepareMeasurements()
    {
        imu_time = imu_data_buffer_.front().time;
 
-    //    if(imu_time > measurements_.lidar_end_time)
-       if(common::ToUniversalSeconds(imu_time) > common::ToUniversalSeconds(measurements_.lidar_end_time)) 
+       if(imu_time > measurements_.lidar_end_time)
+    //    if(common::ToUniversalSeconds(imu_time) > common::ToUniversalSeconds(measurements_.lidar_end_time)) 
        {
            break;
        }
@@ -379,7 +437,7 @@ bool EkfRegistration::PrepareMeasurements()
        imu_data_buffer_.pop_front();
    }
 
-   std::cout << "measurements_.imu_data_buffer.size:" << measurements_.imu_data_buffer.size() << std::endl;
+//    std::cout << "measurements_.imu_data_buffer.size:" << measurements_.imu_data_buffer.size() << std::endl;
 
    timed_id_lidar_pointcloud_buffer_.pop_front();
    is_lidar_prepared_ = false;
@@ -436,7 +494,7 @@ void EkfRegistration::MoveMap()
     float move_distance = std::max((all_parameter_.local_map_parameter.cube_length - 2.0 * all_parameter_.local_map_parameter.move_threshold * all_parameter_.local_map_parameter.delta_range) * 0.5 * 0.9, 
                               double(all_parameter_.local_map_parameter.delta_range * (all_parameter_.local_map_parameter.move_threshold -1)));
 
-    std::cout << "------------move_distance:" << move_distance << std::endl;
+    // std::cout << "------------move_distance:" << move_distance << std::endl;
 
     for(int i = 0; i < 3; i++)
     {
@@ -548,6 +606,46 @@ void EkfRegistration::UpdateMap()
     global_ikd_tree.Add_Points(point_no_need_downsample, false); 
 
     add_point_size = point_to_add.size() + point_no_need_downsample.size();
+}
+
+void EkfRegistration::GetTimedIdPointCloudRaw(TimedIdPointCloud& timed_id_pointcloud_raw)
+{
+    timed_id_pointcloud_raw.time = timed_id_lidar_pointcloud_raw_.time;
+    timed_id_pointcloud_raw.allframe_id = timed_id_lidar_pointcloud_raw_.allframe_id;
+    timed_id_pointcloud_raw.pointcloud.points.clear();
+
+    for(auto iterator_point = timed_id_lidar_pointcloud_raw_.pointcloud_ptr->points.begin(); 
+        iterator_point < timed_id_lidar_pointcloud_raw_.pointcloud_ptr->points.end();
+        iterator_point++)
+    {
+        PointType point;
+        point.x = iterator_point->x;
+        point.y = iterator_point->y;
+        point.z = iterator_point->z;
+        point.intensity = iterator_point->intensity;
+
+        timed_id_pointcloud_raw.pointcloud.points.push_back(point);
+    }
+}
+
+void EkfRegistration::GetTimedIdPointCloudRawCompensationed(TimedIdPointCloud& timed_id_pointcloud_raw_compensationed)
+{
+    timed_id_pointcloud_raw_compensationed.time = timed_id_lidar_pointcloud_raw_compensationed_.time;
+    timed_id_pointcloud_raw_compensationed.allframe_id = timed_id_lidar_pointcloud_raw_compensationed_.allframe_id;
+    timed_id_pointcloud_raw_compensationed.pointcloud.points.clear();
+
+    for(auto iterator_point = timed_id_lidar_pointcloud_raw_compensationed_.pointcloud_ptr->points.begin(); 
+        iterator_point < timed_id_lidar_pointcloud_raw_compensationed_.pointcloud_ptr->points.end();
+        iterator_point++)
+    {
+        PointType point;
+        point.x = iterator_point->x;
+        point.y = iterator_point->y;
+        point.z = iterator_point->z;
+        point.intensity = iterator_point->intensity;
+
+        timed_id_pointcloud_raw_compensationed.pointcloud.points.push_back(point);
+    }
 }
 
 

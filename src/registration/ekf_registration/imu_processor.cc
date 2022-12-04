@@ -174,7 +174,8 @@ void ImuProcessor::ImuIntialize(EkfProcessor& ekf_processor,
 
 void ImuProcessor::LidarMotionCompensation(EkfProcessor& ekf_processor,
                                            Measurements& measurements,
-                                           TimedIdLidarPointCloud& compensationed_pointcloud
+                                           TimedIdLidarPointCloud& compensationed_pointcloud,
+                                           TimedIdLidarPointCloud& timed_id_lidar_pointcloud_raw_compensationed
                                           )
 {
     auto imu_buffer = measurements.imu_data_buffer;
@@ -333,6 +334,7 @@ void ImuProcessor::LidarMotionCompensation(EkfProcessor& ekf_processor,
     Eigen::Matrix3d rotation_imu;
 
     auto iterator_point = compensationed_pointcloud.pointcloud_ptr->points.end() - 1;
+    auto iterator_point_raw = timed_id_lidar_pointcloud_raw_compensationed.pointcloud_ptr->points.end() - 1;
     for(auto iterator_imu_pose = timed_imu_poses.end() - 1; iterator_imu_pose != timed_imu_poses.begin(); iterator_imu_pose--)
     {
       auto imu_pose_current = iterator_imu_pose - 1;
@@ -344,7 +346,7 @@ void ImuProcessor::LidarMotionCompensation(EkfProcessor& ekf_processor,
       acc_imu = imu_pose_next->acc;
       angle_velocity_imu =  imu_pose_next->gyro;
 
-      bool is_1st = true;
+      // bool is_1st = true;
       for(; iterator_point->curvature > imu_pose_current->offset_time; iterator_point--)
       {
         double delta_time = iterator_point->curvature - imu_pose_current->offset_time;
@@ -377,7 +379,34 @@ void ImuProcessor::LidarMotionCompensation(EkfProcessor& ekf_processor,
         {
           break;
         }
-      }      
+      }
+
+
+
+      for(; iterator_point_raw->curvature > imu_pose_current->offset_time; iterator_point_raw--)
+      {
+        double delta_time = iterator_point_raw->curvature - imu_pose_current->offset_time;
+        Eigen::Matrix3d rotation_point(rotation_imu * math::Exp(angle_velocity_imu, delta_time));
+        Eigen::Vector3d position_point(iterator_point_raw->x, iterator_point_raw->y, iterator_point_raw->z);
+
+        Eigen::Vector3d point_interpolate(position_imu + velocity_imu * delta_time + 0.5 * acc_imu * delta_time * delta_time - ekf_state.position);
+
+        Eigen::Vector3d point_compensate = ekf_state.extrinsic_rotation.conjugate() 
+                                        * (ekf_state.rotation.conjugate() * (rotation_point * (ekf_state.extrinsic_rotation * position_point + ekf_state.extrinsic_translation) + point_interpolate) 
+                                         - ekf_state.extrinsic_translation);
+        
+        iterator_point_raw->x = point_compensate(0);
+        iterator_point_raw->y = point_compensate(1);
+        iterator_point_raw->z = point_compensate(2);
+
+        if(iterator_point_raw == timed_id_lidar_pointcloud_raw_compensationed.pointcloud_ptr->points.begin()) 
+        {
+          break;
+        }
+      }
+
+
+
     }
 
     auto it1 = compensationed_pointcloud.pointcloud_ptr->points.begin();
@@ -391,7 +420,8 @@ void ImuProcessor::LidarMotionCompensation(EkfProcessor& ekf_processor,
 
 void ImuProcessor::Process(EkfProcessor& ekf_processor,
                            Measurements& measurements,
-                           TimedIdLidarPointCloud& compensationed_pointcloud)
+                           TimedIdLidarPointCloud& compensationed_pointcloud,
+                           TimedIdLidarPointCloud& timed_id_lidar_pointcloud_raw_compensationed)
 {
     if(measurements.imu_data_buffer.empty() || measurements.timed_id_lidar_pointcloud.pointcloud_ptr->points.size() < 10) 
     {
@@ -420,7 +450,8 @@ void ImuProcessor::Process(EkfProcessor& ekf_processor,
 
     LidarMotionCompensation(ekf_processor, 
                             measurements, 
-                            compensationed_pointcloud);
+                            compensationed_pointcloud,
+                            timed_id_lidar_pointcloud_raw_compensationed);
 
 
 }
