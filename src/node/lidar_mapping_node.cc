@@ -665,7 +665,6 @@ Eigen::Quaterniond LidarMappingNode::ToEigen(const geometry_msgs::Quaternion& qu
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "lidar_mapping_node");
-
     ros::NodeHandle node_handle;
 
     std::string cfg_file_path;
@@ -679,7 +678,7 @@ int main(int argc, char** argv)
 	ss << std::put_time(std::localtime(&time_now), "%Y-%m-%d-%H-%M-%S");
 
 	// std::string project_directory_name = ss.str();
-    std::string project_directory_name = "2022-10-27-19-55-48";
+    std::string project_directory_name = "2022-03-16-11-19-45";
 
     std::cout << "poject_directory_name:" << project_directory_name << std::endl;
 

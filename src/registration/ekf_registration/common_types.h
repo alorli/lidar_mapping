@@ -73,6 +73,17 @@ struct EkfParameter
 {
     int max_iteration;
     double converge_threshold;
+    double converge_limit;
+    bool extrinsic_estimate_enable;
+};
+
+struct LocalMapParameter
+{
+    double cube_length;
+    double move_threshold;
+    double delta_range;
+    double filter_size_surf;
+    double filter_size_map;
 };
 
 struct AllParameter
@@ -80,28 +91,30 @@ struct AllParameter
     LidarProcessParameter lidar_process_parameter;
     ImuParameter imu_parameter;
     ExtrinsicLidarInImu extrinsic_lidar_in_imu;
+    LocalMapParameter local_map_parameter;
 };
 
 typedef pcl::PointXYZINormal LidarPointType;
+typedef std::vector<LidarPointType, Eigen::aligned_allocator<LidarPointType>>  PointVector;
+
+
 struct TimedIdLidarPointCloud
 {
+    // 默认构造函数,在没有显示调用构造函数的时候调用,否则会导致编译通过,但存在使用空指针的风险
+    TimedIdLidarPointCloud():
+        pointcloud_ptr(new pcl::PointCloud<LidarPointType>())
+    {
+        // std::cout << "-------construct TimedIdLidarPointCloud!" << std::endl;
+    };
+
+
     common::Time time;
     long long allframe_id;
-    pcl::PointCloud<LidarPointType> pointcloud;
+    pcl::PointCloud<LidarPointType>::Ptr pointcloud_ptr;
 };
 
 struct TimedImuPose
 {
-    // TimedImuPose()
-    // {
-        // offset_time = 0.0;
-        // acc = Eigen::Vector3d::Zero();
-        // gyro = Eigen::Vector3d::Zero();
-        // velocity = Eigen::Vector3d::Zero();
-        // position = Eigen::Vector3d::Zero();
-        // rotation = Eigen::Quaterniond::Identity();
-    // };
-
     double offset_time;
     Eigen::Vector3d acc;
     Eigen::Vector3d gyro;
@@ -130,6 +143,10 @@ constexpr double kGravityBase = 9.809;
 // constexpr int kStateDimension = 24;
 constexpr float kFloatLimit = 1e-5f;
 constexpr double kDoubleLimit = 1e-11;
+constexpr double kEkfInitTime = 0.1;
+constexpr double kLaserPointcovariance = 0.001;
+constexpr int KNumPointsEstimatePlane = 5;
+
 
 struct EkfState
 {
@@ -145,14 +162,14 @@ struct EkfState
         extrinsic_translation = Eigen::Vector3d::Zero();
     };
 
-    Eigen::Quaterniond rotation;                  //0
-    Eigen::Vector3d position;                     //3
-    Eigen::Vector3d velocity;                     //6
-    Eigen::Vector3d bias_acc;                     //9
-    Eigen::Vector3d bias_gyro;                    //12
-    Eigen::Vector3d gravity;                      //15
-    Eigen::Quaterniond extrinsic_rotation;        //18
-    Eigen::Vector3d extrinsic_translation;        //21
+    Eigen::Vector3d position;                        //0
+    Eigen::Quaterniond rotation;                     //3
+    Eigen::Quaterniond extrinsic_rotation;           //6
+    Eigen::Vector3d extrinsic_translation;           //9
+    Eigen::Vector3d velocity;                        //12
+    Eigen::Vector3d bias_gyro;                       //15
+    Eigen::Vector3d bias_acc;                        //18
+    Eigen::Vector3d gravity;                         //21
 };
 
 struct InputState
@@ -187,7 +204,6 @@ struct ProcessNoiseState
 // 常用内部函数声明
 namespace math
 {
-
 Eigen::Matrix3d hat(const Eigen::Vector3d& vector3d);
 Eigen::Quaterniond exp(Eigen::Vector3d vec, 
 		               const double& scale);
@@ -196,6 +212,28 @@ Eigen::Matrix3d Exp(const Eigen::Vector3d &angle_velocity,
 Eigen::Matrix<double, 3, 3> AMatrix(Eigen::Vector3d& v);
 struct GravityManifold;
 
+Eigen::Vector3d BoxMinusSO3(Eigen::Quaterniond& rotation1,
+                            Eigen::Quaterniond& rotation2
+                            );
+
+Eigen::Vector2d BoxMinusS2(Eigen::Vector3d& gravity1,
+                           Eigen::Vector3d& gravity2
+                           );
+
+Eigen::Vector3d BoxPlusS2(Eigen::Vector3d& gravity,
+                          Eigen::Vector2d& delta
+                          );
+
+void PointcloudLidarToWorld(EkfState& ekf_state, 
+                            TimedIdLidarPointCloud& pointcloud_in, 
+                            TimedIdLidarPointCloud& pointcloud_out);
+
+bool EstimatePlane(Eigen::Matrix<float, 4, 1>& pca_result, 
+                   const PointVector& point, 
+                   const float& threshold);
+
+double CalculateLidarPointDistance(const LidarPointType& lidar_point1,
+                                   const LidarPointType& lidar_point2);
 }
 
 

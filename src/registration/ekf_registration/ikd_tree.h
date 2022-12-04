@@ -8,7 +8,9 @@
 #include <chrono>
 #include <time.h>
 
-
+namespace ikd_tree
+{
+    
 #define EPSS 1e-6
 #define Minimal_Unbalanced_Tree_Size 10
 #define Multi_Thread_Rebuild_Point_Num 1500
@@ -198,3 +200,5 @@ public:
     KD_TREE_NODE * Root_Node = nullptr;
     int max_queue_size = 0;
 };
+
+}

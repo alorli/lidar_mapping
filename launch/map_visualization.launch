@@ -3,7 +3,7 @@
   <param name="/use_sim_time" value="false" />
   <arg name="rviz" default="true" />
 
-  <arg name="map_file_path" default="/home/alorli/test_data/huilongguan_2022_07_26/2022-07-26-11-31-59/map/closeloop_optimization_map1/" />
+  <arg name="map_file_path" default="/home/alorli/test_data/test_ekf/2022-03-16-11-19-45/map/compensation_map/" />
   <arg name="use_voxel_filter" default="false" />
   <arg name="voxel_leaf_size" default="0.07" />
 
