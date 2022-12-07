@@ -297,6 +297,8 @@ EkfProcessor::EkfProcessor(std::string cfg_file_path)
     ekf_parameter_.converge_threshold = cfg_file_["ekf_registration"]["ekf_parameter"]["converge_threshold"].as<double>();
     ekf_parameter_.converge_limit = cfg_file_["ekf_registration"]["ekf_parameter"]["converge_limit"].as<double>();
     ekf_parameter_.extrinsic_estimate_enable = cfg_file_["ekf_registration"]["ekf_parameter"]["extrinsic_estimate_enable"].as<bool>();
+    ekf_parameter_.omp_num_threads_calculate_measurement = cfg_file_["ekf_registration"]["ekf_parameter"]["omp_num_threads_calculate_measurement"].as<int>();
+    
 
     std::fill(converge_limit, converge_limit+23, 0.001);
 
@@ -315,6 +317,7 @@ EkfProcessor::EkfProcessor(std::string cfg_file_path)
     std::cout << "ekf_parameter_.converge_threshold:" << "\033[33m"  << ekf_parameter_.converge_threshold  << "\033[0m" << std::endl;
     std::cout << "ekf_parameter_.converge_limit:" << "\033[33m"  << ekf_parameter_.converge_limit  << "\033[0m" << std::endl;
     std::cout << "ekf_parameter_.extrinsic_estimate_enable:" << "\033[33m"  << ekf_parameter_.extrinsic_estimate_enable  << "\033[0m" << std::endl;
+    std::cout << "ekf_parameter_.omp_num_threads_calculate_measurement:" << "\033[33m"  << ekf_parameter_.omp_num_threads_calculate_measurement  << "\033[0m" << std::endl;
 }
 
 EkfProcessor::~EkfProcessor()
@@ -513,157 +516,6 @@ void EkfProcessor::PredictState(double& delta_time,
     print_1st = false;
 }
 
-/*
-void EkfProcessor::PredictState(double& delta_time, 
-                                Eigen::Matrix<double, 12, 12>& Q, 
-                                InputState& input_state)
-{
-    // 计算 f
-    Eigen::Matrix<double, 24, 1> f = Eigen::Matrix<double, 24, 1>::Zero();
-    f.block<3,1>(0,0) = input_state.gyro - state_.bias_gyro;
-    f.block<3,1>(3,0) = state_.velocity;
-    f.block<3,1>(6,0) = state_.rotation*(input_state.acc - state_.bias_acc) + state_.gravity;
-
-    static bool print_1st = false;
-    if(print_1st)
-    {
-        std::cout << "----f:" << f.transpose() << std::endl;
-    }
-    
-
-    // 计算 df_dx
-    Eigen::Matrix<double, 24, 23> df_dx = Eigen::Matrix<double, 24, 23>::Zero();
-    df_dx.block<3,3>(0,12) = -Eigen::Matrix3d::Identity();
-    df_dx.block<3,3>(3,6) = Eigen::Matrix3d::Identity();
-    df_dx.block<3,3>(6,0) = -1*state_.rotation.toRotationMatrix()*math::hat(input_state.acc - state_.bias_acc);
-    df_dx.block<3,3>(6,9) = -1*state_.rotation.toRotationMatrix();
-
-    math::GravityManifold gravity_manifold_old(state_.gravity);
-    Eigen::Matrix<double, 3, 2> mx_old = gravity_manifold_old.CalculateMx(Eigen::Vector2d::Zero());
-    df_dx.block<3,2>(6,15) = mx_old;
-
-    if(print_1st)
-    {
-        std::cout << "----df_dx:" << std::endl << df_dx << std::endl;
-    }
-
-    // 计算 df_dw
-    Eigen::Matrix<double, 24, 12> df_dw = Eigen::Matrix<double, 24, 12>::Zero();
-    df_dw.block<3,3>(0,3) = -Eigen::Matrix3d::Identity();
-    df_dw.block<3,3>(6,0) = -1*state_.rotation.toRotationMatrix();
-    df_dw.block<3,3>(9,6) = Eigen::Matrix3d::Identity();
-    df_dw.block<3,3>(12,9) = Eigen::Matrix3d::Identity();
-
-    if(print_1st)
-    {
-        std::cout << "----df_dw:" << std::endl << df_dw << std::endl;
-    }
-
-
-    // 用 f 预测状态
-    EkfState state_old = state_;
-    state_.rotation = state_.rotation*math::exp(f.block<3,1>(0,0), delta_time/2.0);
-    state_.position += f.block<3,1>(3,0) * delta_time;
-    state_.velocity += f.block<3,1>(6,0) * delta_time;
-    state_.bias_acc += f.block<3,1>(9,0) * delta_time;
-    state_.bias_gyro += f.block<3,1>(12,0) * delta_time;
-    state_.gravity = math::exp(f.block<3,1>(15,0), delta_time/2.0)*state_.gravity;
-    state_.extrinsic_rotation = state_.extrinsic_rotation*math::exp(f.block<3,1>(18,0), delta_time/2.0);
-    state_.extrinsic_translation += f.block<3,1>(21,0) * delta_time;
-    
-    // 计算 F_x 和 F_w
-    Eigen::Matrix<double, 23, 23> F_x = Eigen::Matrix<double, 23, 23>::Identity();
-    Eigen::Matrix<double, 23, 23> f_x = Eigen::Matrix<double, 23, 23>::Zero();
-    Eigen::Matrix<double, 23, 12> f_w = Eigen::Matrix<double, 23, 12>::Zero();
-
-    // 计算 F_x 和 F_w  ----- state: rotation
-    Eigen::Vector3d rotation_vector = -1.0*f.block<3,1>(0,0)*delta_time;
-
-    // if(print_1st)
-    // {
-    //     std::cout << "####################:" << std::endl;
-    // }
-
-    Eigen::Quaterniond rotation = math::exp(rotation_vector, 0.5);
-    F_x.block<3,3>(0,0) = rotation.toRotationMatrix();
-
-    Eigen::Matrix<double, 3, 3> amatrix_rotation = math::AMatrix(rotation_vector);
-    f_x.block<3,23>(0,0) = amatrix_rotation * df_dx.block<3,23>(0,0);
-    f_w.block<3,12>(0,0) = amatrix_rotation * df_dw.block<3,12>(0,0);
-
-    if(print_1st)
-    {
-        std::cout << "----delta_time:" << std::endl << delta_time << std::endl;
-        std::cout << "----rotation_vector:" << std::endl << rotation_vector << std::endl;
-        std::cout << "----rotation:x" << rotation.x() << " y:" << rotation.y()<< " z:" << rotation.z()<< " w:" << rotation.w() << std::endl;
-        std::cout << "----amatrix_rotation:" << std::endl << amatrix_rotation << std::endl;
-    }
-
-    // 计算 F_x 和 F_w  ----- state: position
-    f_x.block<3,23>(3,0) = df_dx.block<3,23>(3,0);
-    f_w.block<3,12>(3,0) = df_dw.block<3,12>(3,0);    
-
-    // 计算 F_x 和 F_w  ----- state: velocity
-    f_x.block<3,23>(6,0) = df_dx.block<3,23>(6,0);
-    f_w.block<3,12>(6,0) = df_dw.block<3,12>(6,0);     
-
-    // 计算 F_x 和 F_w  ----- state: bias_acc
-    f_x.block<3,23>(9,0) = df_dx.block<3,23>(9,0);
-    f_w.block<3,12>(9,0) = df_dw.block<3,12>(9,0);  
-
-    // 计算 F_x 和 F_w  ----- state: bias_gyro
-    f_x.block<3,23>(12,0) = df_dx.block<3,23>(12,0);
-    f_w.block<3,12>(12,0) = df_dw.block<3,12>(12,0);  
-
-    // 计算 F_x 和 F_w  ----- state: gravity
-    Eigen::Vector3d gravity_vector = f.block<3,1>(15,0)*delta_time;
-    Eigen::Matrix3d delta_gravity_matrix = math::exp(gravity_vector, 0.5).toRotationMatrix();
-
-    math::GravityManifold gravity_manifold_new(state_.gravity);
-    Eigen::Matrix<double, 2, 3> nx = gravity_manifold_new.CalculateNx();
-    Eigen::Matrix<double, 3, 2> mx = mx_old;
-    F_x.block<2,2>(15,15) = nx * delta_gravity_matrix * mx;
-
-    Eigen::Matrix<double, 2, 3> temp_matrix_1 = -nx * delta_gravity_matrix * math::hat(state_old.gravity) * math::AMatrix(gravity_vector).transpose();
-    f_x.block<2,23>(15,0) = temp_matrix_1 * df_dx.block<3,23>(15,0);
-    f_w.block<2,12>(15,0) = temp_matrix_1 * df_dw.block<3,12>(15,0); 
-
-    // 计算 F_x 和 F_w  ----- state: extrinsic_rotation
-    Eigen::Vector3d extrinsic_rotation_vector = -1.0*f.block<3,1>(18,0)*delta_time;
-    Eigen::Quaterniond extrinsic_rotation = math::exp(extrinsic_rotation_vector, 0.5);
-    F_x.block<3,3>(17,17) = extrinsic_rotation.toRotationMatrix();
-
-    Eigen::Matrix<double, 3, 3> amatrix_extrinsic_rotation = math::AMatrix(extrinsic_rotation_vector);
-    f_x.block<3,23>(17,0) = amatrix_extrinsic_rotation * df_dx.block<3,23>(17,0);
-    f_w.block<3,12>(17,0) = amatrix_extrinsic_rotation * df_dw.block<3,12>(17,0);
-
-    // 计算 F_x 和 F_w  ----- state: extrinsic_translation
-    f_x.block<3,23>(20,0) = df_dx.block<3,23>(20,0);
-    f_w.block<3,12>(20,0) = df_dw.block<3,12>(20,0);  
-
-    if(print_1st)
-    {
-        std::cout << "****f_x:" << std::endl << f_x << std::endl;
-        std::cout << "****f_w:" << std::endl << f_w << std::endl;
-        std::cout << "****F_x:" << std::endl << F_x << std::endl;
-        std::cout << "****Q:" << std::endl << Q << std::endl;
-        std::cout << "****process_covariance_:" << std::endl << process_covariance_ << std::endl;
-    }
-
-    // 更新一步预测误差方差阵
-    F_x += f_x * delta_time;
-    process_covariance_ = F_x*process_covariance_*F_x.transpose() + (f_w*delta_time) * Q * (f_w*delta_time).transpose();
-
-
-    if(print_1st)
-    {
-        std::cout << "----F_x:" << std::endl << F_x << std::endl;
-        std::cout << "----process_covariance_:" << std::endl << process_covariance_ << std::endl;
-    }
-
-    print_1st = false;
-}
-*/
 
 void EkfProcessor::UpdateState(ikd_tree::KD_TREE& global_ikd_tree,
                                std::vector<PointVector>& nearest_points_vector,
@@ -1023,6 +875,9 @@ void EkfProcessor::CalculateMeasurement(ikd_tree::KD_TREE& global_ikd_tree,
     corresponding_normal_vector_->clear(); 
     double total_residual = 0.0; 
     int num_features_points_downsize = compensationed_features_pointcloud_downsize_lidar.pointcloud_ptr->points.size();
+
+    omp_set_num_threads(ekf_parameter_.omp_num_threads_calculate_measurement);
+    #pragma omp parallel for
 
     // 遍历每一个降采样点
     for(int i = 0; i < num_features_points_downsize; i++)

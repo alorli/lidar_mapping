@@ -33,3 +33,9 @@ sudo cp ./libyaml-cpp.so* lidar_mapping/lib/
 cd ..
 sudo cp ./inclue/* lidar_mapping/include
 ```
+
+### 4. 编译问题
+# 如果在lidar_mapping的工作空间中还有lidar_localization包，则absl库可能冲突，可以将lidar_mapping/CMakeLists.txt的如下行屏蔽掉再进行编译
+```
+# add_subdirectory("${PROJECT_SOURCE_DIR}/3rd_party/abseil-cpp")
+```

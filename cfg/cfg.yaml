@@ -208,6 +208,7 @@ ekf_registration:
     converge_threshold: 0.001
     converge_limit: 0.001
     extrinsic_estimate_enable: true
+    omp_num_threads_calculate_measurement: 1
     
     
 

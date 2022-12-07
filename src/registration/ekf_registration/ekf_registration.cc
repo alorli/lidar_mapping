@@ -118,18 +118,18 @@ void EkfRegistration::AddSensorData(const sensor_msgs::PointCloud2::ConstPtr& ms
 
     if(PrepareMeasurements())
     {
-        if(!is_start_)
-        {
-            if(measurements_.imu_data_buffer.size() >= 40)
-            {
-                is_start_ = true;
-            }
-            else
-            {
-                alignment_result_.is_converged = false;
-                return;
-            }
-        }
+        // if(!is_start_)
+        // {
+            // if(measurements_.imu_data_buffer.size() >= 40)
+            // {
+                // is_start_ = true;
+            // }
+            // else
+            // {
+                // alignment_result_.is_converged = false;
+                // return;
+            // }
+        // }
 
         if(is_first_scan_)
         {
@@ -140,17 +140,18 @@ void EkfRegistration::AddSensorData(const sensor_msgs::PointCloud2::ConstPtr& ms
         }
 
 
-        // if(!is_start_)
-        // {
-        //     if(measurements_.timed_id_lidar_pointcloud.pointcloud_ptr->points.size() == 4984)
-        //     {
-        //         is_start_ = true;
-        //     }
-        //     else
-        //     {
-        //         return;
-        //     }
-        // }
+        if(!is_start_)
+        {
+            if(measurements_.timed_id_lidar_pointcloud.pointcloud_ptr->points.size() == 4984)
+            {
+                is_start_ = true;
+            }
+            else
+            {
+                alignment_result_.is_converged = false;
+                return;
+            }
+        }
         
         
         std::cout << std::setprecision(25) << std::endl;
@@ -227,7 +228,7 @@ void EkfRegistration::AddSensorData(const sensor_msgs::PointCloud2::ConstPtr& ms
 
         int features_from_map_num = global_ikd_tree.validnum();
 
-        // std::cout << "------------features_from_map_num:" << features_from_map_num << std::endl;
+        std::cout << "------------features_from_map_num:" << features_from_map_num << std::endl;
 
         /*** ICP 和 EKF 更新 ***/
         if(num_features_points_downsize_ < 5)
@@ -298,13 +299,17 @@ void EkfRegistration::AddSensorData(const sensor_msgs::PointCloud2::ConstPtr& ms
         
         UpdateMap();
     }
+    // else
+    // {
+        // alignment_result_.is_converged = false;
+    // }
 
 
     std::chrono::steady_clock::time_point time_end = std::chrono::steady_clock::now();
     std::chrono::duration<double> delta_time
         = std::chrono::duration_cast<std::chrono::duration<double>>(time_end - time_start);
     
-    std::cout << "--------------delta_time:" << delta_time.count()*1000.0 << std::endl;
+    // std::cout << "--------------delta_time:" << delta_time.count()*1000.0 << std::endl;
 }
 
 void EkfRegistration::AddSensorData(const sensor::ImuData& imu_data)

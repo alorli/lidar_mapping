@@ -75,6 +75,7 @@ struct EkfParameter
     double converge_threshold;
     double converge_limit;
     bool extrinsic_estimate_enable;
+    int omp_num_threads_calculate_measurement;
 };
 
 struct LocalMapParameter

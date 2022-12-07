@@ -1,0 +1,8 @@
+prefix=/home/alorli/WORK_SPACE_LCJ/catkin_ws/src/lidar_mapping/build/devel
+
+Name: lidar_mapping
+Description: Description of lidar_mapping
+Version: 0.0.0
+Cflags: -I/home/alorli/WORK_SPACE_LCJ/catkin_ws/src/lidar_mapping/build/devel/include
+Libs: -L${prefix}/lib 
+Requires: 
