@@ -40,7 +40,8 @@ public:
     void AddSensorData(const sensor_msgs::PointCloud2::ConstPtr& msg);
     void AddSensorData(const sensor::ImuData& imu_data);
     void ProcessPointCloud(pcl::PointCloud<velodyne::Point>& velodyne_pointcloud,
-                           TimedIdLidarPointCloud& timed_id_lidar_pointcloud);
+                           TimedIdLidarPointCloud& timed_id_lidar_pointcloud,
+                           TimedIdLidarPointCloud& timed_id_lidar_pointcloud_raw_compensationed);
     bool PrepareMeasurements();
     void MoveMap();
     void UpdateMap();
@@ -59,8 +60,9 @@ private:
 
     long long allframe_id = 0;
     std::deque<TimedIdLidarPointCloud> timed_id_lidar_pointcloud_buffer_;
+    std::deque<TimedIdLidarPointCloud> timed_id_lidar_pointcloud_raw_compensationed_buffer_;
     std::deque<sensor::ImuData> imu_data_buffer_;
-    int num_features_points_downsize_ = 0;     //提取的特征点,进行降采样后的点数
+    int num_features_points_downsize_ = 0;                         //提取的特征点,进行降采样后的点数
     Measurements measurements_;                                    //这里默认调用TimedIdLidarPointCloud的无参构造函数
     TimedIdLidarPointCloud timed_id_lidar_pointcloud_raw_;         //这里默认调用TimedIdLidarPointCloud的无参构造函数
     TimedIdLidarPointCloud timed_id_lidar_pointcloud_raw_compensationed_;         //这里默认调用TimedIdLidarPointCloud的无参构造函数

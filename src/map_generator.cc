@@ -238,9 +238,9 @@ void MapGenerator::GeneratePointCloudMap()
         pcl::PointCloud<registration::PointType>::Ptr cloud_transformed_ptr(new pcl::PointCloud<registration::PointType>);
 
         if(pcl::io::loadPCDFile<registration::PointType>(item_registration_results->pcd_file_path, *cloud_raw_ptr) == -1)
-    		{
-    			PCL_ERROR("Couldn't load pcd file \n");
-    		}
+        {
+            PCL_ERROR("Couldn't load pcd file \n");
+        }
 
 
 
@@ -268,8 +268,8 @@ void MapGenerator::GeneratePointCloudMap()
         }
 
         pcl::transformPointCloud(*cloud_filtered_ptr,
-              								   *cloud_transformed_ptr,
-              								   item_registration_results->alignment_result.final_transform);
+                                 *cloud_transformed_ptr,
+                                 item_registration_results->alignment_result.final_transform);
 
         *map_cloud_ptr += *cloud_transformed_ptr;
 

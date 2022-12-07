@@ -135,6 +135,7 @@ struct Measurements
     common::Time lidar_begin_time;
     common::Time lidar_end_time;
     TimedIdLidarPointCloud timed_id_lidar_pointcloud;
+    TimedIdLidarPointCloud timed_id_lidar_pointcloud_raw;
     std::deque<sensor::ImuData> imu_data_buffer;
 };
 

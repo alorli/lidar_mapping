@@ -33,7 +33,7 @@ endif ()
 message(STATUS "----------------PCL_INCLUDE_DIRS:" ${PCL_INCLUDE_DIRS})
 message(STATUS "----------------PCL_LIBRARIES:" ${PCL_LIBRARIES})
 
-# add_subdirectory("${PROJECT_SOURCE_DIR}/3rd_party/abseil-cpp")
+add_subdirectory("${PROJECT_SOURCE_DIR}/3rd_party/abseil-cpp")
 
 # 可能与lidar_localizatioin 中的 abseil-cpp冲突，暂时屏蔽
 # added by lichunjing 2021-08-10

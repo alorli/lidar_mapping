@@ -175,7 +175,7 @@ void ImuProcessor::ImuIntialize(EkfProcessor& ekf_processor,
 void ImuProcessor::LidarMotionCompensation(EkfProcessor& ekf_processor,
                                            Measurements& measurements,
                                            TimedIdLidarPointCloud& compensationed_pointcloud,
-                                           TimedIdLidarPointCloud& timed_id_lidar_pointcloud_raw_compensationed
+                                           TimedIdLidarPointCloud& compensationed_pointcloud_raw
                                           )
 {
     auto imu_buffer = measurements.imu_data_buffer;
@@ -188,15 +188,25 @@ void ImuProcessor::LidarMotionCompensation(EkfProcessor& ekf_processor,
     const common::Time &pointcloud_end_time = measurements.lidar_end_time;
 
     compensationed_pointcloud = measurements.timed_id_lidar_pointcloud;
+    compensationed_pointcloud_raw = measurements.timed_id_lidar_pointcloud_raw;
 
     sort(compensationed_pointcloud.pointcloud_ptr->points.begin(), 
          compensationed_pointcloud.pointcloud_ptr->points.end(), 
          TimeSort);
 
-    // std::cout << std::setprecision(35)
+    sort(compensationed_pointcloud_raw.pointcloud_ptr->points.begin(), 
+         compensationed_pointcloud_raw.pointcloud_ptr->points.end(), 
+         TimeSort);
+
+    // std::cout << std::setprecision(25)
     //           << "----------imu_buffer.size:" << imu_buffer.size() 
     //           << "  lidar_end_time:" << common::ToUniversalSeconds(pointcloud_end_time) 
     //           << std::endl;
+
+    std::cout << "----------compensationed_pointcloud.allframe_id:" << compensationed_pointcloud.allframe_id 
+              << "  compensationed_pointcloud_raw.allframe_id:" << compensationed_pointcloud_raw.allframe_id 
+              << std::endl;
+
 
     
     Eigen::Vector3d angle_velocity_average, acc_average;
@@ -334,7 +344,7 @@ void ImuProcessor::LidarMotionCompensation(EkfProcessor& ekf_processor,
     Eigen::Matrix3d rotation_imu;
 
     auto iterator_point = compensationed_pointcloud.pointcloud_ptr->points.end() - 1;
-    auto iterator_point_raw = timed_id_lidar_pointcloud_raw_compensationed.pointcloud_ptr->points.end() - 1;
+    auto iterator_point_raw = compensationed_pointcloud_raw.pointcloud_ptr->points.end() - 1;
     for(auto iterator_imu_pose = timed_imu_poses.end() - 1; iterator_imu_pose != timed_imu_poses.begin(); iterator_imu_pose--)
     {
       auto imu_pose_current = iterator_imu_pose - 1;
@@ -399,7 +409,7 @@ void ImuProcessor::LidarMotionCompensation(EkfProcessor& ekf_processor,
         iterator_point_raw->y = point_compensate(1);
         iterator_point_raw->z = point_compensate(2);
 
-        if(iterator_point_raw == timed_id_lidar_pointcloud_raw_compensationed.pointcloud_ptr->points.begin()) 
+        if(iterator_point_raw == compensationed_pointcloud_raw.pointcloud_ptr->points.begin()) 
         {
           break;
         }
@@ -421,7 +431,8 @@ void ImuProcessor::LidarMotionCompensation(EkfProcessor& ekf_processor,
 void ImuProcessor::Process(EkfProcessor& ekf_processor,
                            Measurements& measurements,
                            TimedIdLidarPointCloud& compensationed_pointcloud,
-                           TimedIdLidarPointCloud& timed_id_lidar_pointcloud_raw_compensationed)
+                           TimedIdLidarPointCloud& compensationed_pointcloud_raw
+                           )
 {
     if(measurements.imu_data_buffer.empty() || measurements.timed_id_lidar_pointcloud.pointcloud_ptr->points.size() < 10) 
     {
@@ -451,7 +462,7 @@ void ImuProcessor::Process(EkfProcessor& ekf_processor,
     LidarMotionCompensation(ekf_processor, 
                             measurements, 
                             compensationed_pointcloud,
-                            timed_id_lidar_pointcloud_raw_compensationed);
+                            compensationed_pointcloud_raw);
 
 
 }

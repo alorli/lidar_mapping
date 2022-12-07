@@ -31,7 +31,7 @@ public:
     void Process(EkfProcessor& ekf_processor,
                  Measurements& measurements,
                  TimedIdLidarPointCloud& compensationed_pointcloud,
-                 TimedIdLidarPointCloud& timed_id_lidar_pointcloud_raw_compensationed);
+                 TimedIdLidarPointCloud& compensationed_pointcloud_raw);
     void ImuReset();
     void SetImuParameter(ImuParameter& imu_parameter);
     void SetExtrinsic(ExtrinsicLidarInImu& extrinsic_lidar_in_imu);
@@ -41,7 +41,7 @@ public:
     void LidarMotionCompensation(EkfProcessor& ekf_processor,
                                  Measurements& measurements,
                                  TimedIdLidarPointCloud& compensationed_pointcloud,
-                                 TimedIdLidarPointCloud& timed_id_lidar_pointcloud_raw_compensationed
+                                 TimedIdLidarPointCloud& compensationed_pointcloud_raw
                                  );
     
 
