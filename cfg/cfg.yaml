@@ -5,11 +5,11 @@ ros_interface:
   subscribe_message:
     is_use_lidar: true
     is_use_gnss: false
-    is_use_sick: true
-    is_use_imu: true
+    is_use_sick: false
+    is_use_imu: false
     is_use_odom: false
     is_use_encoder: false
-    lidar_topic: /velodyne_points    # /points_raw   /velodyne_points
+    lidar_topic: /scan0/scan    # /points_raw   /velodyne_points
     lidar_queue_size: 1000000    #10hz 存 27小时数据
     sick_topic: /scan
     sick_queue_size: 1000000    
@@ -53,7 +53,7 @@ ros_interface:
 
 # 目录参数配置
 directory:
-  project_directory: /home/alorli/test_data/test_ekf/     # 工程文件主目录
+  project_directory: /home/alorli/test_data/test_3DSLAM_9#_big/     # 工程文件主目录
   save_map_full_directory: /home/alorli/WORK_SPACE_LCJ/map/      # 定位地图保存路径
 
   map:
@@ -109,13 +109,13 @@ lidar_mapping_node:
   is_run_gnss_aidded_optimization: false
   is_run_closeloop_optimization: false
   is_generate_raw_map: true
-  is_generate_compensation_map: true
-  is_generate_gnss_optimization_map: true
+  is_generate_compensation_map: false
+  is_generate_gnss_optimization_map: false
   is_generate_closeloop_optimization_map: false
-  is_generate_laserscan_map: true
+  is_generate_laserscan_map: false
   is_run_map_partition: false
   is_generate_arealist_file: false
-  is_delete_project_directory_after_save_map: false   # 保存地图以后，是否删除工程目录，以节省空间，部署到车上时，设置成 true，节省空间
+  is_delete_project_directory_after_save_map: true   # 保存地图以后，是否删除工程目录，以节省空间，部署到车上时，设置成 true，节省空间
 
 
 
@@ -129,12 +129,12 @@ map_builder:
     pcd_map_voxel_leaf_size: 0.1
 
 
-  # sick 单线雷达地图生成参数
+  # 地图生成参数
   map_builder_parameter:
     lidar_n_scans: 16                 # 雷达线数
     vlp_mapping_parameter:
       min_map_horizontal_radius: 3.0  # 3.0
-      min_keyframe_distance: 0.0      # 0.5
+      min_keyframe_distance: 0.5      # 0.5
       num_keyframe_submap: 50         #  50
       min_intensity: 0
       max_intensity: 255
@@ -158,7 +158,7 @@ ndt_registration:
     min_horizontal_radius: 3.0  # 5.0
     min_num_points: 1000        # 1000      参与配准的的最少点的个数, added by lichunjing 2021-04-24
     max_radius: 200.0           # 80.0
-    voxel_leaf_size: 1.0        # 默认：1.0
+    voxel_leaf_size: 0.2        # 默认：1.0
     scale_voxel_leaf_size: 1.1  # 1.1      自适应体素滤波,如果体素滤波尺寸太小,每次将体素滤波尺寸放大 1.1倍 added by lichunjing 2021-04-24
 
 
@@ -170,15 +170,15 @@ ndt_registration:
 
   mapping_parameter:
     num_start_frames_add_to_map: 20
-    min_keyframe_distance: 1.0      #默认：1.0
+    min_keyframe_distance: 0.5      #默认：1.0
     map_trim_distance: 50.0
     map_passthrough:
-      x_min: -60.0
-      x_max: 60.0
-      y_min: -60.0
-      y_max: 60.0
-      z_min: -10.0
-      z_max: 30.0
+      x_min: -120.0    # -60.0
+      x_max: 120.0
+      y_min: -120.0     # -60.0
+      y_max: 120.0
+      z_min: -20.0      # -10.0
+      z_max: 60.0       # 30.0
 
 # added by lichunjing 2022-04-25
 ekf_registration:
@@ -243,12 +243,12 @@ gnss_optimization:
 closeloop_constraints_builder:
   closeloop_constraints_builder_parameter:
     num_threads: 6
-    min_score: 27                                              # 25
-    select_interval: 8                                        # 10 在 gnss优化后的位姿中每个几个位姿搜索闭环约束位姿
-    min_constraints_time: 50.0                                 # 20.0 闭环搜索时间限制，时间差小于这个值，不进行闭环约束搜索，这个值根据采集地图时的速度设置，
+    min_score: 35                                              # 27
+    select_interval: 100                                        # 10 在 gnss优化后的位姿中每个几个位姿搜索闭环约束位姿
+    min_constraints_time: 100.0                                 # 20.0 闭环搜索时间限制，时间差小于这个值，不进行闭环约束搜索，这个值根据采集地图时的速度设置，
     min_constraints_distance: 0.0                              # 2.0 闭环搜索距离限制，距离差小于这个值，不进行闭环约束搜索
-    max_constraints_distance: 15.0                              # 20.0 闭环搜索距离限制，距离差大于这个值，不进行闭环约束搜索
-    max_constraints_distance_z: 20.0
+    max_constraints_distance: 100.0                              # 20.0 闭环搜索距离限制，距离差大于这个值，不进行闭环约束搜索
+    max_constraints_distance_z: 10.0
 
 closeloop_optimization:
   closeloop_optimization_parameter:
@@ -260,7 +260,7 @@ closeloop_optimization:
 
 
 map_partition:
-  voxel_filter_size: 0.2     #0.3
+  voxel_filter_size: 0.1     # 0.3
   step_range_x: 20.0
   step_range_y: 20.0
 
