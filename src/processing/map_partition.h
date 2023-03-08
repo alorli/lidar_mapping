@@ -52,6 +52,7 @@ private:
     std::vector<std::string> pointcloud_file_list_;
     std::string raw_pointcloud_file_path_;
     std::string output_pointcloud_file_path_;
+    std::string all_map_path_;
 
     MapPartitionParameter map_partition_parameter_;
 };

@@ -32,6 +32,7 @@ MapPartition::MapPartition(std::string cfg_file_path,
     map_partition_parameter_.step_range_y = cfg_file_["map_partition"]["step_range_y"].as<double>();
 
     // raw_pointcloud_file_path_ = "/home/alorli/test_data/test/test_map/";
+    all_map_path_ = project_directory + project_directory_name + map_main_directory;
     raw_pointcloud_file_path_ = project_directory + project_directory_name + map_main_directory + closeloop_optimization_map_directory;
     output_pointcloud_file_path_ = project_directory + project_directory_name + map_main_directory + output_map_directory;
 
@@ -76,12 +77,13 @@ void MapPartition::RunMapPartition()
                   << " data points from test_pcd.pcd "
                   << std::endl;
 
+        
         // 针对每一块小地图，进行体素滤波
         pcl::VoxelGrid<pcl::PointXYZI> voxel_grid_filter;
 
-        voxel_grid_filter.setLeafSize(map_partition_parameter_.voxel_filter_size,
-                                      map_partition_parameter_.voxel_filter_size,
-                                      map_partition_parameter_.voxel_filter_size);
+        voxel_grid_filter.setLeafSize(0.1,
+                                      0.1,
+                                      0.1);
 
         pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_ptr(new pcl::PointCloud<pcl::PointXYZI>(*input_cloud_ptr));
         voxel_grid_filter.setInputCloud(cloud_ptr);
@@ -89,15 +91,44 @@ void MapPartition::RunMapPartition()
 
         std::cout << "after voxel filter-------i:" << i << " :Loaded "
                     << cloud_ptr->width * cloud_ptr->height
-                    << " data points from test_pcd.pcd "
+                    << " data points"
                     << std::endl;
 
         *all_cloud_ptr += *cloud_ptr;
-	}
+        
 
-    std::cout << "all_cloud_ptr.size: "
+      //  *all_cloud_ptr += *input_cloud_ptr;
+	  }
+
+    /*
+    // 全局地图进行体素滤波
+    pcl::VoxelGrid<pcl::PointXYZI> voxel_grid_filter;
+
+    voxel_grid_filter.setLeafSize(map_partition_parameter_.voxel_filter_size,
+                                  map_partition_parameter_.voxel_filter_size,
+                                  map_partition_parameter_.voxel_filter_size);
+
+    // pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_ptr(new pcl::PointCloud<pcl::PointXYZI>(*all_cloud_ptr));
+    voxel_grid_filter.setInputCloud(all_cloud_ptr);
+    voxel_grid_filter.filter(*all_cloud_ptr);
+
+    std::cout << "after voxel filter-------" << " :Loaded "
               << all_cloud_ptr->width * all_cloud_ptr->height
+              << " data points from all_cloud "
               << std::endl;
+    */
+
+    // 输出一个全局地图
+    std::string all_map_output_path = all_map_path_ + "bin_all_map" + ".pcd";
+    if(pcl::io::savePCDFileBinary(all_map_output_path, *all_cloud_ptr) == -1)
+    {
+        std::cout << "Failed saving " << all_map_output_path << std::endl;
+    }
+    
+
+    // std::cout << "all_cloud_ptr.size: "
+              // << all_cloud_ptr->width * all_cloud_ptr->height
+              // << std::endl;
 
     //遍历寻找各坐标轴的最大最小值：
     struct Area area;
@@ -183,8 +214,26 @@ void MapPartition::RunMapPartition()
             std::string output_path = output_pointcloud_file_path_ + "bin_" + std::string(s_i) + "_" + std::string(s_j) + ".pcd";
 
             std::cout << "--------------output_path:" << output_path << std::endl;
+
+
+            pcl::VoxelGrid<pcl::PointXYZI> voxel_grid_filter;
+            pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_ptr(new pcl::PointCloud<pcl::PointXYZI>(area_cloud[i]));
+            voxel_grid_filter.setLeafSize(map_partition_parameter_.voxel_filter_size,
+                                          map_partition_parameter_.voxel_filter_size,
+                                          map_partition_parameter_.voxel_filter_size);
+
+            // pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_ptr(new pcl::PointCloud<pcl::PointXYZI>(*all_cloud_ptr));
+            voxel_grid_filter.setInputCloud(cloud_ptr);
+            voxel_grid_filter.filter(*cloud_ptr);
+
+            std::cout << "i:" << i << "after voxel filter-------" << " :Loaded "
+                      << cloud_ptr->width * cloud_ptr->height
+                      << " data points from all_cloud "
+                      << std::endl;
+
+
             // 将该 area区域中的点云保存到文件中：
-            if(pcl::io::savePCDFileBinary(output_path, area_cloud[i]) == -1)
+            if(pcl::io::savePCDFileBinary(output_path, *cloud_ptr) == -1)
             {
                 std::cout << "Failed saving " << output_path << std::endl;
             }
