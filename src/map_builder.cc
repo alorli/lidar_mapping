@@ -33,7 +33,7 @@ MapBuilder::MapBuilder(std::string cfg_file_path,
      is_save_vlp_raw_pcd_(false),
      pcd_map_previous_size_(0),
      allframe_id_(0),
-     alignment_result_previous_({true, 0.0, 0.0, 0, Eigen::Matrix4f::Identity()})
+     alignment_result_previous_({true, 0.0, 0.0, 0.0, 0, Eigen::Matrix4f::Identity()})
 {
     cfg_file_ = YAML::LoadFile(cfg_file_path + "/cfg.yaml");
 
@@ -391,7 +391,7 @@ MapBuilder::~MapBuilder()
 }
 
 
-/*
+
 void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
     registration::TimedIdPointCloud timed_id_pointcloud;
@@ -440,6 +440,7 @@ void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& 
     // // end ----added by lichunjing 2021-04-14
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /*
     if(is_save_vlp_raw_pcd_)
     {
         //SaveVlpRawPcd(timed_id_pointcloud);
@@ -453,11 +454,19 @@ void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& 
         // added by lichunjing 2021-04-14
         // SaveVlpRawPcd(timed_id_pointcloud_compensation);
     }
-
+    */
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ndt_registration_.AddSensorData(timed_id_pointcloud);
 
+    // added by lichunjing 2023-03-07
+    if(is_save_vlp_raw_pcd_)
+    {
+        SaveVlpRawPcd(timed_id_pointcloud,
+                      ndt_registration_.GetAlignmentResult());
+    }
+
+    /*
     if(allframe_id_ >= 1)
     {
         // registration::TimedIdPointCloud timed_id_pointcloud_compensation;
@@ -499,6 +508,7 @@ void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& 
             compensation_bag_.write("/points_raw", msg_pointcloud_compensation.header.stamp, msg_pointcloud_compensation);
         }
     }
+    */
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -507,9 +517,9 @@ void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& 
     timed_id_pointcloud_previous_ = timed_id_pointcloud;
 }
 
-*/
 
 
+/*
 void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
     ekf_registration_.AddSensorData(msg);
@@ -535,6 +545,8 @@ void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& 
     }
     
 }
+*/
+
 
 
 void MapBuilder::AddGnssFixData(const sensor_msgs::NavSatFix::ConstPtr& msg)
