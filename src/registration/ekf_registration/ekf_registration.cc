@@ -20,7 +20,7 @@ EkfRegistration::EkfRegistration(std::string cfg_file_path)
     :imu_processor_(cfg_file_path),
      ekf_processor_(cfg_file_path),
      ekf_state_(),
-     alignment_result_({true, 0.0, 0.0, 1, Eigen::Matrix4f::Identity()})
+     alignment_result_({true, 0.0, 0.0, 0.0, 1, Eigen::Matrix4f::Identity()})
 {
     cfg_file_ = YAML::LoadFile(cfg_file_path + "/cfg.yaml");
 

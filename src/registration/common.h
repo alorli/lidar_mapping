@@ -34,6 +34,7 @@ struct AlignmentResult
 {
     bool is_converged;
     double fitness_score;
+    double trans_probability;
     double time_duration_ms;
     int final_num_iteration;
     Eigen::Matrix4f final_transform;

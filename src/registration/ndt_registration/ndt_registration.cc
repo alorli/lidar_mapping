@@ -21,8 +21,8 @@ NdtRegistration::NdtRegistration(std::string cfg_file_path,
      map_ptr_(new pcl::PointCloud<PointType>()),
      pose_last_keyframe_({0.0, 0.0, 0.0, 0.0, 0.0, 0.0}),
      pose_last_trim_({0.0, 0.0, 0.0, 0.0, 0.0, 0.0}),
-     alignment_result_({true, 0.0, 0.0, 1, Eigen::Matrix4f::Identity()}),
-     alignment_result_previous_({true, 0.0, 0.0, 0, Eigen::Matrix4f::Identity()})
+     alignment_result_({true, 0.0, 0.0, 0.0, 1, Eigen::Matrix4f::Identity()}),
+     alignment_result_previous_({true, 0.0, 0.0, 0.0, 0, Eigen::Matrix4f::Identity()})
 {
     cfg_file_ = YAML::LoadFile(cfg_file_path + "/cfg.yaml");
 
@@ -220,6 +220,7 @@ void NdtRegistration::Alignment(pcl::PointCloud<PointType>::Ptr voxel_filtered_p
 
     alignment_result_.time_duration_ms = delta_time.count()*1000.0;
     alignment_result_.fitness_score = pcl_ndt_.getFitnessScore();
+    alignment_result_.trans_probability = pcl_ndt_.getTransformationProbability();
     alignment_result_.final_transform = pcl_ndt_.getFinalTransformation();
     alignment_result_.is_converged = pcl_ndt_.hasConverged();
     alignment_result_.final_num_iteration = pcl_ndt_.getFinalNumIteration();
@@ -227,29 +228,35 @@ void NdtRegistration::Alignment(pcl::PointCloud<PointType>::Ptr voxel_filtered_p
     //
     if(registration_flag_ == 0)
     {
-        std::cout << "\033[34m"
-                << "allframe_id:" << filtered_timed_id_pointcloud_.allframe_id
-                << std::endl
-                << "final_transform:"
-                << std::endl
-                << alignment_result_.final_transform
-                << "\033[0m"
-                << std::endl;
+        std::cout << "\033[34m" << std::endl
+                  << "allframe_id:" << filtered_timed_id_pointcloud_.allframe_id
+                  << "  points size::" << voxel_filtered_pointcloud_ptr->size()
+                  << std::endl
+                  << "final_transform:"
+                  << std::endl
+                  << alignment_result_.final_transform
+                  << "\033[0m"
+                  << std::endl;
 
-        std::cout << "\033[34m Fitness score: " << alignment_result_.fitness_score << "\033[0m"<< std::endl;
+        std::cout << "\033[34m Fitness score: " << alignment_result_.fitness_score 
+                  << "  trans_probability: " << alignment_result_.trans_probability 
+                  << "\033[0m"<< std::endl;
     }
     else if(registration_flag_ == 1)
     {
-        std::cout << "\033[32m"
-                << "allframe_id:" << filtered_timed_id_pointcloud_.allframe_id
-                << std::endl
-                << "final_transform:"
-                << std::endl
-                << alignment_result_.final_transform
-                << "\033[0m"
-                << std::endl;
+        std::cout << "\033[32m" 
+                  << "allframe_id:" << filtered_timed_id_pointcloud_.allframe_id
+                  << "  points size::" << voxel_filtered_pointcloud_ptr->size()
+                  << std::endl
+                  << "final_transform:"
+                  << std::endl
+                  << alignment_result_.final_transform
+                  << "\033[0m"
+                  << std::endl;
 
-        std::cout << "\033[32m Fitness score: " << alignment_result_.fitness_score << "\033[0m"<< std::endl;
+        std::cout << "\033[32m Fitness score: " << alignment_result_.fitness_score 
+                  << "  trans_probability: " << alignment_result_.trans_probability 
+                  << "\033[0m"<< std::endl;
     }
 
 }
