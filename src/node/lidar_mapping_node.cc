@@ -39,6 +39,7 @@ LidarMappingNode::LidarMappingNode(std::string cfg_file_path,
     is_generate_closeloop_optimization_map_ = cfg_file_["lidar_mapping_node"]["is_generate_closeloop_optimization_map"].as<bool>();
     is_generate_laserscan_map_ = cfg_file_["lidar_mapping_node"]["is_generate_laserscan_map"].as<bool>();
     is_run_gnss_aidded_optimization_ = cfg_file_["lidar_mapping_node"]["is_run_gnss_aidded_optimization"].as<bool>();
+    is_run_anchor_points_optimization_ = cfg_file_["lidar_mapping_node"]["is_run_anchor_points_optimization"].as<bool>();
     is_run_closeloop_optimization_ = cfg_file_["lidar_mapping_node"]["is_run_closeloop_optimization"].as<bool>();
     is_run_map_partition_ = cfg_file_["lidar_mapping_node"]["is_run_map_partition"].as<bool>();
     is_generate_arealist_file_ = cfg_file_["lidar_mapping_node"]["is_generate_arealist_file"].as<bool>();
@@ -479,6 +480,12 @@ void LidarMappingNode::RunGenerateMap(const ros::WallTimerEvent& unused_timer_ev
             map_builder_.GnssAidedOptimization();
         }
 
+        if(is_run_anchor_points_optimization_)
+        {
+            std::cout << "----------------------------------------run_anchor_points_optimization---------------------------------" << std::endl;
+            map_builder_.AnchorPointsOptimization();
+        }
+
         generate_map_status.data = 0.25;
         generate_map_status_publisher_.publish(generate_map_status);
 
@@ -677,8 +684,8 @@ int main(int argc, char** argv)
 	std::stringstream ss;
 	ss << std::put_time(std::localtime(&time_now), "%Y-%m-%d-%H-%M-%S");
 
-	// std::string project_directory_name = ss.str();
-    std::string project_directory_name = "2022-03-16-11-19-45";
+	std::string project_directory_name = ss.str();
+    // std::string project_directory_name = "2023-09-02-22-59-11";
 
     std::cout << "poject_directory_name:" << project_directory_name << std::endl;
 

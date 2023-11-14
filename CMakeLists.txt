@@ -33,6 +33,9 @@ endif ()
 message(STATUS "----------------PCL_INCLUDE_DIRS:" ${PCL_INCLUDE_DIRS})
 message(STATUS "----------------PCL_LIBRARIES:" ${PCL_LIBRARIES})
 
+message(STATUS "----------------G2O_INCLUDE_DIR:" ${G2O_INCLUDE_DIR})
+message(STATUS "----------------G2O_LIBS:" ${G2O_LIBS}) 
+
 # add_subdirectory("${PROJECT_SOURCE_DIR}/3rd_party/abseil-cpp")
 
 # 可能与lidar_localizatioin 中的 abseil-cpp冲突，暂时屏蔽
@@ -172,13 +175,13 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(
+include_directories( 
   include
   ${catkin_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}
   ${PCL_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
-  ${G2O_INCLUDE_DIRS}
+  ${G2O_INCLUDE_DIR}
   ${CHOLMOD_INCLUDE_DIR}
 )
 
@@ -212,6 +215,7 @@ add_executable(lidar_mapping_node src/node/lidar_mapping_node.cc
                                   src/constraints/gnss_constraints_builder.cc
                                   src/constraints/closeloop_constraints_builder.cc
                                   src/optimization/gnss_optimization.cc
+                                  src/optimization/anchor_points_optimization.cc
                                   src/registration/ekf_registration/common_types.cc
                                   src/registration/ndt_registration/ndt_registration.cc
                                   src/registration/ekf_registration/ekf_registration.cc

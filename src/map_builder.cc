@@ -25,7 +25,8 @@ MapBuilder::MapBuilder(std::string cfg_file_path,
      laserscan_pose_interpolation_(cfg_file_path, project_directory_name),
      gnss_constraints_builder_(cfg_file_path, project_directory_name),
      closeloop_constraints_builder_(cfg_file_path, project_directory_name),
-     gnss_optimization_(cfg_file_path, project_directory_name), 
+     gnss_optimization_(cfg_file_path, project_directory_name),
+     anchor_points_optimization_(cfg_file_path, project_directory_name), 
      closeloop_optimization_(cfg_file_path, project_directory_name),
      to_grid_map_(cfg_file_path),
      map_partition_(cfg_file_path, project_directory_name),
@@ -394,159 +395,156 @@ MapBuilder::~MapBuilder()
 
 void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
-    registration::TimedIdPointCloud timed_id_pointcloud;
-    pcl::fromROSMsg(*msg, timed_id_pointcloud.pointcloud);
-
-    std::vector<int> indices;
-    pcl::removeNaNFromPointCloud(timed_id_pointcloud.pointcloud,
-                                 timed_id_pointcloud.pointcloud,
-                                 indices);
-
-    timed_id_pointcloud.time = common::FromRos(msg->header.stamp);
-    timed_id_pointcloud.allframe_id = allframe_id_;
-
-    // added by lichunjing 2021-04-14
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // registration::TimedIdPointCloud timed_id_pointcloud_compensation;
-    // timed_id_pointcloud_compensation.time = timed_id_pointcloud.time;
-    // timed_id_pointcloud_compensation.allframe_id = timed_id_pointcloud.allframe_id;
-
-    // if(!motion_compensation_.CompensationUsingPoseExtrapolater(timed_id_pointcloud.time,
-    //                                                            timed_id_pointcloud.pointcloud,
-    //                                                            timed_id_pointcloud_compensation.pointcloud,
-    //                                                            extrapolator_ptr_.get()
-    //                                                            ))
-    // {
-    //     return;
-    // }
-
-    // transform::Rigid3f pose_predict = extrapolator_ptr_->ExtrapolatePose(timed_id_pointcloud_compensation.time).cast<float>();
-    // Eigen::Matrix4f  predict_matrix = Eigen::Matrix4f::Identity();
-    // predict_matrix.block<3,1>(0,3) = pose_predict.translation();
-    // predict_matrix.block<3,3>(0,0) = pose_predict.rotation().toRotationMatrix();
-
-    // // 调用时提供预测位姿
-    // ndt_registration_.AddSensorData(timed_id_pointcloud_compensation, predict_matrix);
-
-    // registration::AlignmentResult alignment_result = ndt_registration_.GetAlignmentResult();
-
-    // Eigen::Vector3d translation_alignment_result = alignment_result.final_transform.block<3,1>(0,3).cast<double>();
-    // Eigen::Quaterniond rotation_alignment_result = Eigen::Quaterniond(alignment_result.final_transform.block<3,3>(0,0).cast<double>());
-
-    // transform::Rigid3d pose_estimate = transform::Rigid3d(translation_alignment_result,
-    //                                                       rotation_alignment_result
-    //                                                       );
-    // extrapolator_ptr_->AddPose(timed_id_pointcloud_compensation.time, pose_estimate);
-    // // end ----added by lichunjing 2021-04-14
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /*
-    if(is_save_vlp_raw_pcd_)
+    int registration_method = 1;   //0:使用NDT配准   1: 使用ekf配准
+    if(registration_method == 0)
     {
-        //SaveVlpRawPcd(timed_id_pointcloud);
+        registration::TimedIdPointCloud timed_id_pointcloud;
+        pcl::fromROSMsg(*msg, timed_id_pointcloud.pointcloud);
 
-        // added by lichunjing 2022-12-02
-        SaveVlpRawPcd(timed_id_pointcloud,
-                      ndt_registration_.GetAlignmentResult());
+        std::vector<int> indices;
+        pcl::removeNaNFromPointCloud(timed_id_pointcloud.pointcloud,
+                                    timed_id_pointcloud.pointcloud,
+                                    indices);
 
-        
+        timed_id_pointcloud.time = common::FromRos(msg->header.stamp);
+        timed_id_pointcloud.allframe_id = allframe_id_;
 
         // added by lichunjing 2021-04-14
-        // SaveVlpRawPcd(timed_id_pointcloud_compensation);
-    }
-    */
-
-    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ndt_registration_.AddSensorData(timed_id_pointcloud);
-
-    // added by lichunjing 2023-03-07
-    if(is_save_vlp_raw_pcd_)
-    {
-        SaveVlpRawPcd(timed_id_pointcloud,
-                      ndt_registration_.GetAlignmentResult());
-    }
-
-    /*
-    if(allframe_id_ >= 1)
-    {
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // registration::TimedIdPointCloud timed_id_pointcloud_compensation;
-        // timed_id_pointcloud_compensation.time = timed_id_pointcloud_previous_.time;
-        // timed_id_pointcloud_compensation.allframe_id = timed_id_pointcloud_previous_.allframe_id;
-        // motion_compensation_.LinearInterpolation(timed_id_pointcloud_previous_.pointcloud,
-        //                                          timed_id_pointcloud_compensation.pointcloud,
-        //                                          alignment_result_previous_.final_transform,
-        //                                          ndt_registration_.GetAlignmentResult().final_transform
-        //                                         );
+        // timed_id_pointcloud_compensation.time = timed_id_pointcloud.time;
+        // timed_id_pointcloud_compensation.allframe_id = timed_id_pointcloud.allframe_id;
 
-        // added by lichunjing 2021-08-12
-        registration::TimedIdPointCloud timed_id_pointcloud_compensation;
-        timed_id_pointcloud_compensation.time = timed_id_pointcloud.time;
-        timed_id_pointcloud_compensation.allframe_id = timed_id_pointcloud.allframe_id;
-        motion_compensation_.LinearInterpolation(timed_id_pointcloud.pointcloud,
-                                                 timed_id_pointcloud_compensation.pointcloud,
-                                                 alignment_result_previous_.final_transform,
-                                                 ndt_registration_.GetAlignmentResult().final_transform
-                                                );
+        // if(!motion_compensation_.CompensationUsingPoseExtrapolater(timed_id_pointcloud.time,
+        //                                                            timed_id_pointcloud.pointcloud,
+        //                                                            timed_id_pointcloud_compensation.pointcloud,
+        //                                                            extrapolator_ptr_.get()
+        //                                                            ))
+        // {
+        //     return;
+        // }
 
+        // transform::Rigid3f pose_predict = extrapolator_ptr_->ExtrapolatePose(timed_id_pointcloud_compensation.time).cast<float>();
+        // Eigen::Matrix4f  predict_matrix = Eigen::Matrix4f::Identity();
+        // predict_matrix.block<3,1>(0,3) = pose_predict.translation();
+        // predict_matrix.block<3,3>(0,0) = pose_predict.rotation().toRotationMatrix();
 
-        // 这里不加预测位姿，实际使用的是线性递推得到的位姿作为预测位姿
-        ndt_registration_compensation_.AddSensorData(timed_id_pointcloud_compensation);
+        // // 调用时提供预测位姿
+        // ndt_registration_.AddSensorData(timed_id_pointcloud_compensation, predict_matrix);
 
-        // SaveVlpCompensationPcd(timed_id_pointcloud_compensation);
+        // registration::AlignmentResult alignment_result = ndt_registration_.GetAlignmentResult();
 
-        // added by lichunjing 2022-12-02
-        SaveVlpCompensationPcd(timed_id_pointcloud_compensation, 
-                               ndt_registration_compensation_.GetAlignmentResult());
+        // Eigen::Vector3d translation_alignment_result = alignment_result.final_transform.block<3,1>(0,3).cast<double>();
+        // Eigen::Quaterniond rotation_alignment_result = Eigen::Quaterniond(alignment_result.final_transform.block<3,3>(0,0).cast<double>());
 
-        // added by lichunjing 2022-03-22
-        if(is_save_compensation_bag_)
+        // transform::Rigid3d pose_estimate = transform::Rigid3d(translation_alignment_result,
+        //                                                       rotation_alignment_result
+        //                                                       );
+        // extrapolator_ptr_->AddPose(timed_id_pointcloud_compensation.time, pose_estimate);
+        // // end ----added by lichunjing 2021-04-14
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        /*
+        if(is_save_vlp_raw_pcd_)
         {
-            sensor_msgs::PointCloud2 msg_pointcloud_compensation;
-            pcl::toROSMsg(timed_id_pointcloud_compensation.pointcloud, msg_pointcloud_compensation);
-            msg_pointcloud_compensation.header.stamp = common::ToRos(timed_id_pointcloud_compensation.time);
+            // SaveVlpRawPcd(timed_id_pointcloud);
 
-            compensation_bag_.write("/points_raw", msg_pointcloud_compensation.header.stamp, msg_pointcloud_compensation);
+            // added by lichunjing 2022-12-02
+            SaveVlpRawPcd(timed_id_pointcloud,
+                        ndt_registration_.GetAlignmentResult());
+
+            
+
+            // added by lichunjing 2021-04-14
+            // SaveVlpRawPcd(timed_id_pointcloud_compensation);
+        }
+        */
+
+        // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ndt_registration_.AddSensorData(timed_id_pointcloud);
+
+        // added by lichunjing 2023-03-07
+        if(is_save_vlp_raw_pcd_)
+        {
+            SaveVlpRawPcd(timed_id_pointcloud,
+                        ndt_registration_.GetAlignmentResult());
+        }
+
+        
+        if(allframe_id_ >= 1)
+        {
+            // registration::TimedIdPointCloud timed_id_pointcloud_compensation;
+            // timed_id_pointcloud_compensation.time = timed_id_pointcloud_previous_.time;
+            // timed_id_pointcloud_compensation.allframe_id = timed_id_pointcloud_previous_.allframe_id;
+            // motion_compensation_.LinearInterpolation(timed_id_pointcloud_previous_.pointcloud,
+            //                                          timed_id_pointcloud_compensation.pointcloud,
+            //                                          alignment_result_previous_.final_transform,
+            //                                          ndt_registration_.GetAlignmentResult().final_transform
+            //                                         );
+
+            // added by lichunjing 2021-08-12
+            registration::TimedIdPointCloud timed_id_pointcloud_compensation;
+            timed_id_pointcloud_compensation.time = timed_id_pointcloud.time;
+            timed_id_pointcloud_compensation.allframe_id = timed_id_pointcloud.allframe_id;
+            motion_compensation_.LinearInterpolation(timed_id_pointcloud.pointcloud,
+                                                    timed_id_pointcloud_compensation.pointcloud,
+                                                    alignment_result_previous_.final_transform,
+                                                    ndt_registration_.GetAlignmentResult().final_transform
+                                                    );
+
+
+            // 这里不加预测位姿，实际使用的是线性递推得到的位姿作为预测位姿
+            ndt_registration_compensation_.AddSensorData(timed_id_pointcloud_compensation);
+
+            // SaveVlpCompensationPcd(timed_id_pointcloud_compensation);
+
+            // added by lichunjing 2022-12-02
+            SaveVlpCompensationPcd(timed_id_pointcloud_compensation, 
+                                ndt_registration_compensation_.GetAlignmentResult());
+
+            // added by lichunjing 2022-03-22
+            if(is_save_compensation_bag_)
+            {
+                sensor_msgs::PointCloud2 msg_pointcloud_compensation;
+                pcl::toROSMsg(timed_id_pointcloud_compensation.pointcloud, msg_pointcloud_compensation);
+                msg_pointcloud_compensation.header.stamp = common::ToRos(timed_id_pointcloud_compensation.time);
+
+                compensation_bag_.write("/points_raw", msg_pointcloud_compensation.header.stamp, msg_pointcloud_compensation);
+            }
+        }
+        
+        // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+        allframe_id_++;
+        alignment_result_previous_ = ndt_registration_.GetAlignmentResult();
+        timed_id_pointcloud_previous_ = timed_id_pointcloud;
+    }
+    else if(registration_method == 1)
+    {
+        ekf_registration_.AddSensorData(msg);
+
+        // 保存原始点云
+        registration::TimedIdPointCloud timed_id_pointcloud_raw;
+        ekf_registration_.GetTimedIdPointCloudRaw(timed_id_pointcloud_raw);
+        registration::AlignmentResult alignment_result_raw = ekf_registration_.GetAlignmentResult();
+        if(alignment_result_raw.is_converged)
+        {
+            SaveVlpRawPcd(timed_id_pointcloud_raw, 
+                          alignment_result_raw);
+        }
+
+        // 保存去畸变后的点云
+        registration::TimedIdPointCloud timed_id_pointcloud_compensation;
+        ekf_registration_.GetTimedIdPointCloudRawCompensationed(timed_id_pointcloud_compensation);
+        registration::AlignmentResult alignment_result_compensation = ekf_registration_.GetAlignmentResult();
+        if(alignment_result_compensation.is_converged)
+        {
+            SaveVlpCompensationPcd(timed_id_pointcloud_compensation, 
+                                   alignment_result_compensation);
         }
     }
-    */
-    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-    allframe_id_++;
-    alignment_result_previous_ = ndt_registration_.GetAlignmentResult();
-    timed_id_pointcloud_previous_ = timed_id_pointcloud;
 }
-
-
-
-/*
-void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& msg)
-{
-    ekf_registration_.AddSensorData(msg);
-
-    // 保存原始点云
-    registration::TimedIdPointCloud timed_id_pointcloud_raw;
-    ekf_registration_.GetTimedIdPointCloudRaw(timed_id_pointcloud_raw);
-    registration::AlignmentResult alignment_result_raw = ekf_registration_.GetAlignmentResult();
-    if(alignment_result_raw.is_converged)
-    {
-        SaveVlpRawPcd(timed_id_pointcloud_raw, 
-                      alignment_result_raw);
-    }
-
-    // 保存去畸变后的点云
-    registration::TimedIdPointCloud timed_id_pointcloud_compensation;
-    ekf_registration_.GetTimedIdPointCloudRawCompensationed(timed_id_pointcloud_compensation);
-    registration::AlignmentResult alignment_result_compensation = ekf_registration_.GetAlignmentResult();
-    if(alignment_result_compensation.is_converged)
-    {
-        SaveVlpCompensationPcd(timed_id_pointcloud_compensation, 
-                               alignment_result_compensation);
-    }
-    
-}
-*/
-
 
 
 void MapBuilder::AddGnssFixData(const sensor_msgs::NavSatFix::ConstPtr& msg)
@@ -713,6 +711,12 @@ void MapBuilder::GnssAidedOptimization()
                                        gnss_constraints_builder_.GetGnssPoseConstraints());
 }
 
+
+void MapBuilder::AnchorPointsOptimization()
+{
+    anchor_points_optimization_.RunOptimization();
+}
+
 void MapBuilder::CloseloopOptimization()
 {
     closeloop_constraints_builder_.BuildConstraints();
@@ -838,6 +842,7 @@ void MapBuilder::GenerateLaserScanMap()
 
 void MapBuilder::GetPcdMapMsg(sensor_msgs::PointCloud2& pcd_map_msg)
 {
+    /*
     pcl::PointCloud<registration::PointType>::ConstPtr pcd_map_ptr
         = ndt_registration_.GetMapConstPtr();
 
@@ -846,6 +851,28 @@ void MapBuilder::GetPcdMapMsg(sensor_msgs::PointCloud2& pcd_map_msg)
         pcd_map_previous_size_ = pcd_map_ptr->points.size();
         pcl::PointCloud<registration::PointType> pcd_map_filtered;
         pcl::VoxelGrid<registration::PointType> voxel_grid_filter;
+        voxel_grid_filter.setLeafSize(msg_parameter_.pcd_map_voxel_leaf_size,
+                                      msg_parameter_.pcd_map_voxel_leaf_size,
+                                      msg_parameter_.pcd_map_voxel_leaf_size);
+        voxel_grid_filter.setInputCloud(pcd_map_ptr);
+        voxel_grid_filter.filter(pcd_map_filtered);
+        std::cout << "Original: " << pcd_map_ptr->points.size() << " points." << std::endl;
+        std::cout << "Filtered: " << pcd_map_filtered.points.size() << " points." << std::endl;
+
+        pcl::toROSMsg(pcd_map_filtered, pcd_map_msg);
+        pcd_map_msg.header.stamp = ros::Time::now();
+        pcd_map_msg.header.frame_id = "map";
+    }
+    */
+
+    pcl::PointCloud<registration::LidarPointType>::ConstPtr pcd_map_ptr
+        = ekf_registration_.GetMapConstPtr();
+
+    if(pcd_map_ptr->points.size() != pcd_map_previous_size_)
+    {
+        pcd_map_previous_size_ = pcd_map_ptr->points.size();
+        pcl::PointCloud<registration::LidarPointType> pcd_map_filtered;
+        pcl::VoxelGrid<registration::LidarPointType> voxel_grid_filter;
         voxel_grid_filter.setLeafSize(msg_parameter_.pcd_map_voxel_leaf_size,
                                       msg_parameter_.pcd_map_voxel_leaf_size,
                                       msg_parameter_.pcd_map_voxel_leaf_size);

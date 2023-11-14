@@ -125,6 +125,7 @@ private:
 
     
     bool is_run_gnss_aidded_optimization_;
+    bool is_run_anchor_points_optimization_;
     bool is_run_closeloop_optimization_;
     bool is_generate_raw_map_;
     bool is_generate_compensation_map_;

@@ -11,6 +11,7 @@
 #include "src/map_generator.h"
 #include "src/constraints/gnss_constraints_builder.h"
 #include "src/optimization/gnss_optimization.h"
+#include "src/optimization/anchor_points_optimization.h"
 #include "src/constraints/closeloop_constraints_builder.h"
 #include "src/optimization/closeloop_optimization.h"
 
@@ -102,6 +103,7 @@ public:
     void GenerateCompensationMap();
     void GenerateRawMap();
     void GnssAidedOptimization();
+    void AnchorPointsOptimization();
     void CloseloopOptimization();
     void GenerateGnssOptimizationMap();
     void GenerateCloseloopOptimizationMap();
@@ -147,6 +149,7 @@ private:
     constraints::CloseloopConstraintsBuilder closeloop_constraints_builder_;
 
     optimization::GnssOptimization gnss_optimization_;
+    optimization::AnchorPointsOptimization anchor_points_optimization_;
     optimization::CloseloopOptimization closeloop_optimization_;
 
     MapGenerator map_generator_raw_;

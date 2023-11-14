@@ -4,7 +4,7 @@
   <arg name="rviz" default="true" />
 
   <!-- <arg name="map_file_path" default="/home/alorli/test_data/velodyne/pointcloud_raw/map/" /> -->
-  <arg name="map_file_path" default="/home/alorli/test_data/huilongguan_2021_04_25/map/laserscan_map/" />
+  <arg name="map_file_path" default="/home/alorli/test_data/cheku/2023-08-30-22-19-29/map/laserscan_map/" />
   <arg name="use_voxel_filter" default="false" />
   <arg name="voxel_leaf_size" default="0.07" />
 

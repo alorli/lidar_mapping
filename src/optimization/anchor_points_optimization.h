@@ -1,26 +1,14 @@
 ///////////////////////////////////////////////////////////////////////////////
-// by lichunjing 2021_01_26
+// by lichunjing 2023_03_08
 ///////////////////////////////////////////////////////////////////////////////
-#ifndef GNSS_OPTIMIZATION_H_
-#define GNSS_OPTIMIZATION_H_
+#ifndef ANCHOR_POINTS_OPTIMIZATION_H_
+#define ANCHOR_POINTS_OPTIMIZATION_H_
 
-// #include "src/common/time.h"
-// #include "src/common/time_conversion.h"
-// #include "src/map_generator.h"
-#include "src/constraints/gnss_constraints_builder.h"
-
-// #include <pcl/point_types.h>
-// #include <pcl_conversions/pcl_conversions.h>
-// #include <pcl/registration/ndt.h>
-
-// // #include<Eigen/Core>
-// #include <Eigen/Geometry>
-// #include <vector>
 #include <string>
 #include <fstream>
 #include "yaml-cpp/yaml.h"
+#include "src/optimization/gnss_optimization.h"
 
-#include "g2o/core/eigen_types.h"
 #include "g2o/core/sparse_optimizer.h"
 #include "g2o/core/block_solver.h"
 #include "g2o/core/factory.h"
@@ -37,27 +25,28 @@
 namespace optimization
 {
 
-struct GnssOptimizationParameter
-{
-    double lidar_keyframe_distance;
-    double use_distance_lidar_pose_estimate_init_angle;
-    double distance_interval_add_prior_gnss_pose;
-    int max_iterations;
+// struct GnssOptimizationParameter
+// {
+    // double lidar_keyframe_distance;
+    // double use_distance_lidar_pose_estimate_init_angle;
+    // double distance_interval_add_prior_gnss_pose;
+    // int max_iterations;
+// 
+    // double arm_rtk_antennna_in_vlp;
+// };
+// 
+// struct LeverArmParameter
+// {
+    // bool use_lever_arm;
+    // double lever_arm_x;
+    // double lever_arm_y;
+    // double lever_arm_z;
+// };
+// 
 
-    double arm_rtk_antennna_in_vlp;
-};
+// G2O_USE_TYPE_GROUP(slam3d);
 
-struct LeverArmParameter
-{
-    bool use_lever_arm;
-    double lever_arm_x;
-    double lever_arm_y;
-    double lever_arm_z;
-};
-
-
-G2O_USE_TYPE_GROUP(slam3d);
-
+/*
 class EdgeSE3PriorXYZ : public g2o::BaseUnaryEdge<3, g2o::Vector3D, g2o::VertexSE3>
 {
 public:
@@ -118,16 +107,16 @@ public:
     }
 };
 
+*/
 
-class GnssOptimization
+class AnchorPointsOptimization
 {
 public:
-    GnssOptimization(std::string cfg_file_path, 
-                     std::string project_directory_name);
-    ~GnssOptimization();
+    AnchorPointsOptimization(std::string cfg_file_path, 
+                             std::string project_directory_name);
+    ~AnchorPointsOptimization();
 
-    void RunOptimization(std::vector<mapping::RegistrationResultsFilelist> registration_results_filelists,
-                         std::vector<constraints::GnssPoseConstraint> gnss_pose_constraints);
+    void RunOptimization();
 
 
 private:
@@ -141,8 +130,8 @@ private:
     void AddLidarOdomVertex(Eigen::Vector3f translation,
                             Eigen::Matrix3f rotation, 
                             long long vertex_id);
-    void AddGnssVertex(Eigen::Vector3d translation,
-                       long long vertex_id);
+    // void AddGnssVertex(Eigen::Vector3d translation,
+                    //    long long vertex_id);
 
     void AddEdges();
     void AddLidarOdomEdges();
@@ -150,9 +139,9 @@ private:
 
     void AddVertexesAndEdgesToOptimizer(g2o::SparseOptimizer& optimizer);
 
-    void EstimateInitAngle();
+    // void EstimateInitAngle();
 
-    void AlignToGnss();
+    // void AlignToGnss();
 
     void OutputG2oFile(std::ofstream& g2o_file);
     void OutputOptimizationResultsFile();
@@ -183,15 +172,15 @@ private:
     Eigen::Matrix<double, 6, 6> lidar_odom_information_;
     Eigen::Matrix<double, 3, 3> lidar_gnss_information_;
 
-    Eigen::Vector3d gnss_position_init_;
+    // Eigen::Vector3d gnss_position_init_;
     Eigen::Vector3f lidar_position_init_;
     bool is_get_gnss_position_init_;
 
-    Eigen::Matrix3d initial_rotation_matrix_;
+    // Eigen::Matrix3d initial_rotation_matrix_;
 
     std::ofstream g2o_file_before_optimization_;
     std::ofstream g2o_file_after_optimization_;
-    std::ofstream gnss_optimization_results_filelist_;
+    std::ofstream anchor_points_optimization_results_filelist_;
     std::ofstream gnss_init_pose_file_;
 };
 

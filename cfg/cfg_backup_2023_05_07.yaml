@@ -5,11 +5,11 @@ ros_interface:
   subscribe_message:
     is_use_lidar: true
     is_use_gnss: false
-    is_use_sick: true
-    is_use_imu: true
+    is_use_sick: false
+    is_use_imu: false
     is_use_odom: false
     is_use_encoder: false
-    lidar_topic: /rslidar_points    # /points_raw   /velodyne_points /rslidar_points
+    lidar_topic: /points_raw    # /points_raw   /velodyne_points /rslidar_points
     lidar_queue_size: 1000000    #10hz 存 27小时数据
     sick_topic: /scan
     sick_queue_size: 1000000    
@@ -53,7 +53,7 @@ ros_interface:
 
 # 目录参数配置
 directory:
-  project_directory: /home/alorli/test_data/cheku/     # 工程文件主目录
+  project_directory: /home/alorli/test_data/test_P3_beijing/     # 工程文件主目录
   save_map_full_directory: /home/alorli/WORK_SPACE_LCJ/map/      # 定位地图保存路径
 
   map:
@@ -113,10 +113,10 @@ lidar_mapping_node:
   is_run_anchor_points_optimization: false
   is_run_closeloop_optimization: true
   is_generate_raw_map: true
-  is_generate_compensation_map: true
+  is_generate_compensation_map: false
   is_generate_gnss_optimization_map: false
-  is_generate_closeloop_optimization_map: false
-  is_generate_laserscan_map: true
+  is_generate_closeloop_optimization_map: true
+  is_generate_laserscan_map: false
   is_run_map_partition: false
   is_generate_arealist_file: false
   is_delete_project_directory_after_save_map: false   # 保存地图以后，是否删除工程目录，以节省空间，部署到车上时，设置成 true，节省空间
@@ -137,8 +137,8 @@ map_builder:
   map_builder_parameter:
     lidar_n_scans: 16                 # 雷达线数
     vlp_mapping_parameter:
-      min_map_horizontal_radius: 0.5  # 3.0
-      min_keyframe_distance: 0.02      # 0.5
+      min_map_horizontal_radius: 3.0  # 3.0
+      min_keyframe_distance: 0.5      # 0.5
       num_keyframe_submap: 50         #  50
       min_intensity: 0
       max_intensity: 255
@@ -159,17 +159,17 @@ map_builder:
 
 ndt_registration:
   filter_parameter:
-    min_horizontal_radius: 0.5  # 5.0
+    min_horizontal_radius: 3.0  # 5.0
     min_num_points: 1000        # 1000      参与配准的的最少点的个数, added by lichunjing 2021-04-24
     max_radius: 200.0           # 80.0
-    voxel_leaf_size: 0.1        # 默认：1.0
+    voxel_leaf_size: 0.2        # 默认：1.0
     scale_voxel_leaf_size: 1.1  # 1.1      自适应体素滤波,如果体素滤波尺寸太小,每次将体素滤波尺寸放大 1.1倍 added by lichunjing 2021-04-24
 
 
   ndt_parameter:
     transformation_epsilon: 0.01
     step_size: 0.1                 # 默认：0.1
-    resolution: 0.5                # 默认：1.0
+    resolution: 1.0                # 默认：1.0
     max_iterations: 30      
 
   mapping_parameter:
@@ -187,8 +187,8 @@ ndt_registration:
 # added by lichunjing 2022-04-25
 ekf_registration:
   lidar_process:
-    lidar_min_range: 0.8
-    ring_filter_interval: 1
+    lidar_min_range: 4.0
+    ring_filter_interval: 4
   imu_parameter:
     gravity_local: 9.81
     init_count_max: 20
@@ -196,17 +196,11 @@ ekf_registration:
     covariance_gyro: 0.1
     covariance_bias_acc: 0.0001
     covariance_bias_gyro: 0.0001
-  # extrinsic_lidar_in_imu:
-    # translation: [0.0, 0.0, 0.28]
-    # rotation: [1.0, 0.0, 0.0, 
-              #  0.0, 1.0, 0.0, 
-              #  0.0, 0.0, 1.0]
   extrinsic_lidar_in_imu:
-    translation: [0.0108, 0.0, 0.093]    #P3传感器
-    rotation: [0, -1, 0,
-              1, 0, 0,
-              0, 0, 1]
-             
+    translation: [0.0, 0.0, 0.28]
+    rotation: [1.0, 0.0, 0.0, 
+               0.0, 1.0, 0.0, 
+               0.0, 0.0, 1.0]
   local_map:
     cube_length: 1000.0
     move_threshold: 1.5
@@ -248,19 +242,19 @@ closeloop_constraints_builder:
   closeloop_constraints_builder_parameter:
     num_threads: 6
     min_score: 35                                              # 35
-    select_interval: 40                                        # 10 在 gnss优化后的位姿中每个几个位姿搜索闭环约束位姿
+    select_interval: 10                                        # 10 在 gnss优化后的位姿中每个几个位姿搜索闭环约束位姿
     min_constraints_time: 100.0                                 # 20.0 闭环搜索时间限制，时间差小于这个值，不进行闭环约束搜索，这个值根据采集地图时的速度设置，
     min_constraints_distance: 0.0                              # 2.0 闭环搜索距离限制，距离差小于这个值，不进行闭环约束搜索
     max_constraints_distance: 20.0                              # 20.0 闭环搜索距离限制，距离差大于这个值，不进行闭环约束搜索
-    max_constraints_distance_z: 5.0                             # 50.0
+    max_constraints_distance_z: 10.0
 
 closeloop_optimization:
   closeloop_optimization_parameter:
-    num_fixed_vertex: 100                            # 10
+    num_fixed_vertex: 10                            # 10
     max_iterations: 100
-    lidar_odom_translation_weight_xy: 0.3   # 0.3
-    lidar_odom_translation_weight_z: 0.3    # 0.3
-    lidar_odom_rotation_weight: 0.3         # 0.3
+    lidar_odom_translation_weight_xy: 0.3
+    lidar_odom_translation_weight_z: 0.3
+    lidar_odom_rotation_weight: 0.3
 
 
 anchor_points_optimization:

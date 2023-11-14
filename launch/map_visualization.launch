@@ -3,7 +3,7 @@
   <param name="/use_sim_time" value="false" />
   <arg name="rviz" default="true" />
 
-  <arg name="map_file_path" default="/home/alorli/test_data/test_3DSLAM_9#_big/2023-03-07-21-38-23/map/raw_map/" />
+  <arg name="map_file_path" default="/home/alorli/test_data/cheku/2023-08-30-22-19-29/map/compensation_map/" />
   <arg name="use_voxel_filter" default="false" />
   <arg name="voxel_leaf_size" default="0.07" />
 

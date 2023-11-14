@@ -21,9 +21,9 @@ GnssConstraintsBuilder::GnssConstraintsBuilder(std::string cfg_file_path,
     std::string gnss_main_directory = cfg_file_["directory"]["gnss"]["main_directory"].as<std::string>();
 
 
-    std::string compensation_directory = cfg_file_["directory"]["velodyne"]["compensation_directory"].as<std::string>();
+    // std::string compensation_directory = cfg_file_["directory"]["velodyne"]["compensation_directory"].as<std::string>();
     // 使用未去畸变点云进行优化建图
-    // std::string compensation_directory = cfg_file_["directory"]["velodyne"]["raw_directory"].as<std::string>();
+    std::string compensation_directory = cfg_file_["directory"]["velodyne"]["raw_directory"].as<std::string>();
 
 
     std::string registration_results_filelist = cfg_file_["directory"]["velodyne"]["registration_results_filelist"].as<std::string>();

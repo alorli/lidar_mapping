@@ -50,6 +50,11 @@ public:
     void GetTimedIdPointCloudRaw(TimedIdPointCloud& timed_id_pointcloud_raw);
     void GetTimedIdPointCloudRawCompensationed(TimedIdPointCloud& timed_id_pointcloud_raw_compensationed);
 
+    pcl::PointCloud<registration::LidarPointType>::ConstPtr GetMapConstPtr() 
+    {
+        return compensationed_features_pointcloud_downsize_world_.pointcloud_ptr;
+    };
+
 private:
     YAML::Node cfg_file_;
     AllParameter all_parameter_;
