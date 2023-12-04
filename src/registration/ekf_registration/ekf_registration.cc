@@ -83,7 +83,7 @@ EkfRegistration::~EkfRegistration()
 
 void EkfRegistration::AddSensorData(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
-    std::cout << "------------------------------------------------------------------------------------------------------------------" << std::endl;
+    // std::cout << "------------------------------------------------------------------------------------------------------------------" << std::endl;
     std::chrono::steady_clock::time_point time_start = std::chrono::steady_clock::now();
 
 
@@ -145,26 +145,27 @@ void EkfRegistration::AddSensorData(const sensor_msgs::PointCloud2::ConstPtr& ms
         }
 
  
-        // if(!is_start_)
-        // {
+        if(!is_start_)
+        {
             // if(measurements_.timed_id_lidar_pointcloud.pointcloud_ptr->points.size() == 4984)
-            // {
-                // is_start_ = true;
-            // }
-            // else
-            // {
-                // alignment_result_.is_converged = false;
-                // return;
-            // }
-        // }
+            if(measurements_.timed_id_lidar_pointcloud.pointcloud_ptr->points.size() == 13206)
+            {
+                is_start_ = true;
+            }
+            else
+            {
+                alignment_result_.is_converged = false;
+                return;
+            }
+        }
         
         static long long frame_id = 0;
-        std::cout << std::setprecision(25) << std::endl;
+        std::cout << std::setprecision(20) << std::endl;
         std::cout << std::endl << std::endl << std::endl;
-        std::cout << "\033[32m" << "------------------------------------------------------------------------------------------------------------------" << "\033[0m" << std::endl;
-        std::cout << "---------allframe_id:" << frame_id++
+        std::cout << "------------------------------------------------------------------------------------------------------------------" << std::endl;
+        std::cout << "\033[32m" << "---------allframe_id:" << frame_id++
                   << "   lidar_points:" << measurements_.timed_id_lidar_pointcloud.pointcloud_ptr->points.size() 
-                  << std::endl;
+                  << "\033[0m" << std::endl;
 
 
 
@@ -190,6 +191,8 @@ void EkfRegistration::AddSensorData(const sensor_msgs::PointCloud2::ConstPtr& ms
 
         std::cout << "------predict lidar_position_:" << lidar_position_.transpose()
                   << std::endl;
+
+        std::cout << "----feats_undistort.size:" << compensationed_features_pointcloud_.pointcloud_ptr->points.size() << std::endl;
 
         if(compensationed_features_pointcloud_.pointcloud_ptr->empty())
         {
@@ -334,6 +337,42 @@ void EkfRegistration::ProcessPointCloud(pcl::PointCloud<velodyne::Point>& velody
                                         TimedIdLidarPointCloud& timed_id_lidar_pointcloud_raw_compensationed)
 {
     bool is_1st = true;
+    int N_SCANS   = 16;
+    int SCAN_RATE = 10;
+    bool given_offset_time = false;
+
+    /*** These variables only works when no point timestamps given ***/
+    // 1Hz 1s转360度 1ms转0.36度；10Hz 1s转360×10度 1ms转0.36*10度
+    // double omega_l = 0.361 * SCAN_RATE;       // scan angular velocity
+    double omega_l = 360.0 * SCAN_RATE;       // scan angular velocity
+    std::vector<bool> is_first(N_SCANS, true);
+    std::vector<double> yaw_fp(N_SCANS, 0.0);      // yaw of first scan point
+    std::vector<float> yaw_last(N_SCANS, 0.0);   // yaw of last scan point
+    std::vector<float> time_last(N_SCANS, 0.0);  // last offset time
+
+    int points_size = velodyne_pointcloud.points.size();
+
+    // 假如提供了每个点的时间戳
+    if(velodyne_pointcloud.points[points_size - 1].time > 0)
+    {
+        given_offset_time = true;  // 提供时间偏移
+    }
+    else   // 没有提供每个点的时间戳
+    {
+        given_offset_time = false;
+        double yaw_first = atan2(velodyne_pointcloud.points[0].y, velodyne_pointcloud.points[0].x) * 57.29578;
+        double yaw_end  = yaw_first;
+        int layer_first = velodyne_pointcloud.points[0].ring;
+        for(uint i = points_size - 1; i > 0; i--)
+        {
+            if(velodyne_pointcloud.points[i].ring == layer_first)
+            {
+                yaw_end = atan2(velodyne_pointcloud.points[i].y, velodyne_pointcloud.points[i].x) * 57.29578;   //寻找终止yaw角
+                break;
+            }
+        }
+    }
+
     for(int i=0; i<velodyne_pointcloud.points.size(); i++)
     {
         LidarPointType lidar_point;
@@ -358,6 +397,38 @@ void EkfRegistration::ProcessPointCloud(pcl::PointCloud<velodyne::Point>& velody
         //               << std::endl;
         // }
 
+        if(!given_offset_time)
+        {
+            int layer = velodyne_pointcloud.points[i].ring;
+            double yaw_angle = atan2(lidar_point.y, lidar_point.x) * 57.2957;
+            if(is_first[layer])
+            {
+                // printf("layer: %d; is first: %d", layer, is_first[layer]);
+                yaw_fp[layer] = yaw_angle;
+                is_first[layer] = false;
+                lidar_point.curvature = 0.0;
+                yaw_last[layer] = yaw_angle;
+                time_last[layer] = lidar_point.curvature;
+                continue;
+            }
+            // compute offset time
+            if(yaw_angle <= yaw_fp[layer])
+            {
+                lidar_point.curvature = (yaw_fp[layer]-yaw_angle) / omega_l;
+            }
+            else
+            {
+                lidar_point.curvature = (yaw_fp[layer]-yaw_angle+360.0) / omega_l;
+            }
+            if (lidar_point.curvature < time_last[layer])  
+            {
+                lidar_point.curvature+=360.0/omega_l;
+            }
+
+            yaw_last[layer] = yaw_angle;
+            time_last[layer] = lidar_point.curvature;
+        }
+
         timed_id_lidar_pointcloud_raw_.pointcloud_ptr->points.push_back(lidar_point);
         timed_id_lidar_pointcloud_raw_compensationed.pointcloud_ptr->points.push_back(lidar_point);
 
@@ -371,9 +442,9 @@ void EkfRegistration::ProcessPointCloud(pcl::PointCloud<velodyne::Point>& velody
         }
     }
 
-    std::cout << "------origin.points.size:" << velodyne_pointcloud.points.size() 
-              << " filtered.points.size:" << timed_id_lidar_pointcloud.pointcloud_ptr->points.size() 
-              << std::endl;
+    // std::cout << "------origin.points.size:" << velodyne_pointcloud.points.size() 
+            //   << " filtered.points.size:" << timed_id_lidar_pointcloud.pointcloud_ptr->points.size() 
+            //   << std::endl;
 }
 
 bool EkfRegistration::PrepareMeasurements()

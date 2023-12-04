@@ -395,7 +395,7 @@ MapBuilder::~MapBuilder()
 
 void MapBuilder::AddVlpPointCloudData(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
-    int registration_method = 1;   //0:使用NDT配准   1: 使用ekf配准
+    int registration_method = 0;   //0:使用NDT配准   1: 使用ekf配准
     if(registration_method == 0)
     {
         registration::TimedIdPointCloud timed_id_pointcloud;

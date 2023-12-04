@@ -203,9 +203,9 @@ void ImuProcessor::LidarMotionCompensation(EkfProcessor& ekf_processor,
     //           << "  lidar_end_time:" << common::ToUniversalSeconds(pointcloud_end_time) 
     //           << std::endl;
 
-    std::cout << "----------compensationed_pointcloud.allframe_id:" << compensationed_pointcloud.allframe_id 
-              << "  compensationed_pointcloud_raw.allframe_id:" << compensationed_pointcloud_raw.allframe_id 
-              << std::endl;
+    // std::cout << "----------compensationed_pointcloud.allframe_id:" << compensationed_pointcloud.allframe_id 
+              // << "  compensationed_pointcloud_raw.allframe_id:" << compensationed_pointcloud_raw.allframe_id 
+              // << std::endl;
 
 
     

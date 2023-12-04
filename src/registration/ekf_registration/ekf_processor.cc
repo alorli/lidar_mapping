@@ -410,6 +410,11 @@ void EkfProcessor::PredictState(double& delta_time,
     // 计算 F_x 和 F_w  ----- state: rotation
     Eigen::Vector3d rotation_vector = -1.0*f.block<3,1>(3,0)*delta_time;
 
+    if(print_1st)
+    {
+        // std::cout << "----delta_time:" << delta_time << std::endl;
+    }
+
     Eigen::Quaterniond rotation = math::exp(rotation_vector, 0.5);
     F_x.block<3,3>(3,3) = rotation.toRotationMatrix();
 

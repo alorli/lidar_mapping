@@ -1,9 +1,9 @@
 <!--edit by lichunjiing 2020_12_23 -->
 <launch>
-  <param name="/use_sim_time" value="false" />
+  <param name="/use_sim_time" value="true" />
   <arg name="rviz" default="true" />
 
-  <arg name="map_file_path" default="/home/alorli/test_data/cheku/2023-08-30-22-19-29/map/compensation_map/" />
+  <arg name="map_file_path" default="/home/alorli/test_data/cheku/2023-12-03-23-07-29/map/bin_all_map/" />
   <arg name="use_voxel_filter" default="false" />
   <arg name="voxel_leaf_size" default="0.07" />
 

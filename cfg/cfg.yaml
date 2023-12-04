@@ -6,10 +6,10 @@ ros_interface:
     is_use_lidar: true
     is_use_gnss: false
     is_use_sick: true
-    is_use_imu: true
+    is_use_imu: false
     is_use_odom: false
     is_use_encoder: false
-    lidar_topic: /rslidar_points    # /points_raw   /velodyne_points /rslidar_points
+    lidar_topic: /points_raw    # /points_raw   /velodyne_points /rslidar_points
     lidar_queue_size: 1000000    #10hz 存 27小时数据
     sick_topic: /scan
     sick_queue_size: 1000000    
@@ -109,15 +109,15 @@ directory:
 
 
 lidar_mapping_node:
-  is_run_gnss_aidded_optimization: true
+  is_run_gnss_aidded_optimization: false
   is_run_anchor_points_optimization: false
-  is_run_closeloop_optimization: true
-  is_generate_raw_map: true
+  is_run_closeloop_optimization: false
+  is_generate_raw_map: false
   is_generate_compensation_map: true
   is_generate_gnss_optimization_map: false
-  is_generate_closeloop_optimization_map: false
-  is_generate_laserscan_map: true
-  is_run_map_partition: false
+  is_generate_closeloop_optimization_map: true
+  is_generate_laserscan_map: false
+  is_run_map_partition: true
   is_generate_arealist_file: false
   is_delete_project_directory_after_save_map: false   # 保存地图以后，是否删除工程目录，以节省空间，部署到车上时，设置成 true，节省空间
 
@@ -208,11 +208,11 @@ ekf_registration:
               0, 0, 1]
              
   local_map:
-    cube_length: 1000.0
+    cube_length: 1000.0    #1000.0
     move_threshold: 1.5
-    delta_range: 300.0
-    filter_size_surf: 0.5
-    filter_size_map: 0.5
+    delta_range: 300.0     #300
+    filter_size_surf: 0.3
+    filter_size_map: 0.3
   ekf_parameter:
     max_iteration: 3
     converge_threshold: 0.001
@@ -274,9 +274,9 @@ anchor_points_optimization:
 
 
 map_partition:
-  voxel_filter_size: 0.3     # 0.3
-  step_range_x: 20.0
-  step_range_y: 20.0
+  voxel_filter_size: 0.1     # 0.3
+  step_range_x: 2000.0
+  step_range_y: 2000.0
 
 
 
