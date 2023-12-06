@@ -24,6 +24,7 @@ MapPartition::MapPartition(std::string cfg_file_path,
     std::string project_directory = cfg_file_["directory"]["project_directory"].as<std::string>();
     std::string map_main_directory = cfg_file_["directory"]["map"]["main_directory"].as<std::string>();
     std::string closeloop_optimization_map_directory = cfg_file_["directory"]["map"]["closeloop_optimization_map"].as<std::string>();
+    std::string compensation_map_directory = cfg_file_["directory"]["map"]["compensation_map"].as<std::string>();
     std::string output_map_directory = cfg_file_["directory"]["map_partition"]["output_map_directory"].as<std::string>();
 
 
@@ -33,7 +34,8 @@ MapPartition::MapPartition(std::string cfg_file_path,
 
     // raw_pointcloud_file_path_ = "/home/alorli/test_data/test/test_map/";
     all_map_path_ = project_directory + project_directory_name + map_main_directory;
-    raw_pointcloud_file_path_ = project_directory + project_directory_name + map_main_directory + closeloop_optimization_map_directory;
+    // raw_pointcloud_file_path_ = project_directory + project_directory_name + map_main_directory + closeloop_optimization_map_directory;
+    raw_pointcloud_file_path_ = project_directory + project_directory_name + map_main_directory + compensation_map_directory;
     output_pointcloud_file_path_ = project_directory + project_directory_name + map_main_directory + output_map_directory;
 
     std::cout << std::endl;
@@ -124,11 +126,59 @@ void MapPartition::RunMapPartition()
     {
         std::cout << "Failed saving " << all_map_output_path << std::endl;
     }
-    
-
     // std::cout << "all_cloud_ptr.size: "
               // << all_cloud_ptr->width * all_cloud_ptr->height
               // << std::endl;
+
+    // ------------------------------ 输出多线雷达的 RGB 格式点云地图 ------------------------------
+    if(1)
+    {
+      double min_intensity_ = 0;
+      double max_intensity_ = 15;
+      double min_map_horizontal_radius_ = 2.0;
+      pcl::PointCloud<pcl::PointXYZRGB>::Ptr map_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
+      
+      for(pcl::PointCloud<registration::PointType>::const_iterator item = all_cloud_ptr->begin();
+          item != all_cloud_ptr->end();
+          item++)
+      {
+          pcl::PointXYZRGB point_xyz_rgb;
+          point_xyz_rgb.x = (double)item->x;
+          point_xyz_rgb.y = (double)item->y;
+          point_xyz_rgb.z = (double)item->z;
+          double gray = 0.0;
+          if(typeid(registration::PointType) == typeid(pcl::PointXYZI))
+          {
+              // point.intensity = (double)item->intensity;
+              gray = common::Clamp(((double)item->intensity - min_intensity_) / (max_intensity_ - min_intensity_),
+                                  0.0,
+                                  1.0);
+          }
+          point_xyz_rgb.r = gray*255;
+          point_xyz_rgb.g = gray*255;
+          point_xyz_rgb.b = gray*255;
+          double horizontal_radius = sqrt(pow(point_xyz_rgb.x, 2.0) + pow(point_xyz_rgb.y, 2.0));
+          if(horizontal_radius > min_map_horizontal_radius_)
+          {
+              if(1)
+              {
+                if((point_xyz_rgb.z > -1.0) && (point_xyz_rgb.z < -0.3))
+                {
+                  map_cloud_ptr->push_back(point_xyz_rgb);
+                }
+              }   
+          }
+      }
+
+      // 输出一个全局地图
+      std::string all_map_rgb_output_path = all_map_path_ + "bin_all_map_rgb" + ".pcd";
+      if(pcl::io::savePCDFileBinary(all_map_rgb_output_path, *map_cloud_ptr) == -1)
+      {
+          std::cout << "Failed saving " << all_map_rgb_output_path << std::endl;
+      }
+    }
+
+    return;
 
     //遍历寻找各坐标轴的最大最小值：
     struct Area area;

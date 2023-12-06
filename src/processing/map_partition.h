@@ -11,6 +11,7 @@
 #include "sensor_msgs/LaserScan.h"
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include "src/registration/ndt_registration/ndt_registration.h"
 
 #include "yaml-cpp/yaml.h"
 
